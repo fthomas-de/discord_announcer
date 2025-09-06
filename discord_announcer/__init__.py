@@ -1,4 +1,4 @@
 """Initialize the app"""
 
-__version__ = "0.0.9"
-__title__ = "Example"
+__version__ = "0.0.10"
+__title__ = "discord_announcer"

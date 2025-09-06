@@ -4,12 +4,12 @@
 from django.apps import AppConfig
 
 # AA Example App
-from example import __version__
+from discord_announcer import __version__
 
 
-class ExampleConfig(AppConfig):
+class DAConfig(AppConfig):
     """App Config"""
 
-    name = "example"
-    label = "example"
-    verbose_name = f"Example App v{__version__}"
+    name = "discord_announcer"
+    label = "discord_announcer"
+    verbose_name = f"Discord Announcer v{__version__}"

@@ -1,5 +1,5 @@
-appname = example
-package = example
+appname = discord_announcer
+package = discord_announcer
 
 # Default goal
 .DEFAULT_GOAL := help

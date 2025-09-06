@@ -5,10 +5,10 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpResponse
 from django.shortcuts import render
-
+from discord_announcer.discord_bot import send_message_to_discord
 
 @login_required
-@permission_required("example.basic_access")
+@permission_required("discord_announcer.basic_access")
 def index(request: WSGIRequest) -> HttpResponse:
     """
     Index view
@@ -17,5 +17,5 @@ def index(request: WSGIRequest) -> HttpResponse:
     """
 
     context = {"text": "Hello, World!"}
-
-    return render(request, "example/index.html", context)
+    send_message_to_discord()
+    return render(request, "discord_announcer/index.html", context)

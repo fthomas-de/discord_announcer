@@ -5,12 +5,12 @@ requires = [
 ]
 
 [project]
-name = "aa-example-plugin"
-description = "Example Plugin for Alliance Auth (GitHub Version)"
+name = "discord_announcer"
+description = "DA Plugin for Alliance Auth (GitHub Version)"
 readme = "README.md"
 keywords = [
     "allianceauth",
-    "example",
+    "discord_announcer",
 ]
 license = { file = "LICENSE" }
 authors = [
@@ -43,9 +43,9 @@ urls.Changelog = "https://github.com/ppfeufer/aa-example-plugin/blob/master/CHAN
 urls."Issue / Bug Reports" = "https://github.com/ppfeufer/aa-example-plugin/issues"
 
 [tool.hatch.version]
-path = "example/__init__.py"
+path = "discord_announcer/__init__.py"
 
 [tool.hatch.build]
 include = [
-    "/example",
+    "/discord_announcer",
 ]

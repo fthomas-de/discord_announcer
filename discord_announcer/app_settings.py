@@ -5,5 +5,5 @@ from django.conf import settings
 
 # put your app settings here
 
-
-EXAMPLE_SETTING_ONE = getattr(settings, "EXAMPLE_SETTING_ONE", None)
+DIVISION = getattr(settings, "DIVISION", 2)
+REV_TYPE = getattr(settings, "REV_TYPE", ['market_transaction'])

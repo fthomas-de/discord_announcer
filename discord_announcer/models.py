@@ -16,3 +16,7 @@ class General(models.Model):
         managed = False
         default_permissions = ()
         permissions = (("basic_access", "Can access this app"),)
+
+class LastRun(models.Model):
+    last_run_date = models.DateField()
+    last_run_time = models.TimeField()
