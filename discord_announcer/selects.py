@@ -24,10 +24,7 @@ def get_corp_transaction_token(corp_id: int) -> Token:
         return False
     
     chars_in_corp = get_chars_in_corp(corp_id)
-    print("Characters in corp:", chars_in_corp)
-    
     token = Token.objects.filter(scopes__name=REQUIRED_SCOPE, character_id__in=chars_in_corp).first()
-    print("token:", token)
 
     if not token:
         logger.error("No token found with required scope: %s", REQUIRED_SCOPE)
@@ -38,7 +35,6 @@ def get_corp_transaction_token(corp_id: int) -> Token:
 def get_transactions(corp_id: int, division: int):
     token = get_corp_transaction_token(corp_id)
     transactions = esi.client.Wallet.get_corporations_corporation_id_wallets_division_transactions(corporation_id=corp_id, division=division, token=token.valid_access_token()).result()
-    print("len Transactions:", len(transactions))
 
     if not transactions:
         logger.info("No transactions found for corporation: %s", corp_id)
@@ -53,12 +49,6 @@ def get_transactions_for_timeframe(time):
         logger.info("No transactions found")
         return []
 
-    print("times", time)
-
     sales = [t for t in transactions if t['date'] >= time]
-
-    print(len(sales), "sales found")
-    for sale in sales:
-        print(sale)
 
     return sales

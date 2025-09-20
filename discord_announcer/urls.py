@@ -8,6 +8,6 @@ from discord_announcer import views
 
 app_name: str = "discord_announcer"
 
-urlpatterns = [
-    path("", views.index, name="index"),
-]
+# urlpatterns = [
+#     path("", views.index, name="index"),
+# ]
