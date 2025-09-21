@@ -1,3 +1,15 @@
+DIVISION = 5
+CORPORATION_ID = 98633815
+REF_TYPE = ['market_transaction']
+TIME_DELTA = 12
+REQUIRED_SCOPE = "esi-wallet.read_corporation_wallets.v1"
+CHANNEL_ID = 1413885436366950582
+
+
+
+
+
+
 # Example Plugin App for Alliance Auth (GitHub Version)<a name="example-plugin-app-for-alliance-auth-github-version"></a>
 
 This is an example plugin app for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth)

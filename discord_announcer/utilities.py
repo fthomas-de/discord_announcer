@@ -28,7 +28,7 @@ def format_sales(sales) -> list:
         for type_id in type_dict.keys():
             # sales for type id and location id
             sale = [s for s in sales if s['location_id'] == loc_id and s['type_id'] == type_id]
-            sum_unit_price = sum(s['unit_price'] for s in sale)
+            sum_unit_price = sum(s['unit_price'] * s['quantity'] for s in sale)
             sum_quantity = sum(s['quantity'] for s in sale)
             formatted_sale.append(f"{type_dict[type_id]} x {sum_quantity} for {millify(sum_unit_price)} Isk" )
         formatted_sales.append( (location_dict[loc_id], "\n".join(formatted_sale)) )

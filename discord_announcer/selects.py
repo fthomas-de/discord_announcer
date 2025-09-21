@@ -49,6 +49,6 @@ def get_transactions_for_timeframe(time):
         logger.info("No transactions found")
         return []
 
-    sales = [t for t in transactions if t['date'] >= time]
+    sales = [t for t in transactions if t['date'] >= time and t['is_buy'] is False]
 
     return sales
