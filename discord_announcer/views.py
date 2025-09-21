@@ -1,7 +1,7 @@
 """App Views"""
 
 from datetime import datetime, timedelta
-from discord_announcer.app_settings import TIME_DELTA, CHANNEL_ID
+from discord_announcer.app_settings import TIME_DELTA
 from discord_announcer.selects import get_transactions_for_timeframe
 from discord_announcer.utilities import format_sales
 from django.contrib.auth.decorators import login_required, permission_required

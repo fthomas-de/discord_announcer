@@ -5,7 +5,7 @@ logger = get_extension_logger(__name__)
 
 ## Use a small helper to check if AA-Discordbot is installs
 def discord_bot_active():
-        return apps.is_installed('aadiscordbot')
+        return True #apps.is_installed('aadiscordbot')
 
 def send_message_to_discord(messages: list, channel_id: int, hours: int):   
     
@@ -32,3 +32,6 @@ def send_message_to_discord(messages: list, channel_id: int, hours: int):
                 send_message(channel_id=channel_id, embed=e) # Embed
                 #send_message(channel_id=channel_id, message=message) # Message
                 #send_message(channel_id=channel_id, message=message, embed=e) # Both
+
+        else:
+            logger.error("AADiscordBot not installed, cannot send message to discord")

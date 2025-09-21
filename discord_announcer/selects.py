@@ -1,6 +1,6 @@
 from allianceauth.services.hooks import get_extension_logger
 
-from discord_announcer.app_settings import CORPORATION_ID, DIVISION, DIVISION, REQUIRED_SCOPE
+from discord_announcer.app_settings import REQUIRED_SCOPE
 
 from allianceauth.eveonline.models import EveCharacter
 from esi.models import Token
@@ -43,8 +43,8 @@ def get_transactions(corp_id: int, division: int):
     return transactions
 
 
-def get_transactions_for_timeframe(time):
-    transactions = get_transactions(CORPORATION_ID, DIVISION)
+def get_transactions_for_timeframe(time: int, corporation_id: int, division: int):
+    transactions = get_transactions(corporation_id, division)
     if transactions is None:
         logger.info("No transactions found")
         return []

@@ -8,19 +8,25 @@ import logging
 from celery import shared_task
 from discord_announcer.discord_bot import send_message_to_discord
 from discord_announcer.selects import get_transactions_for_timeframe
-from discord_announcer.app_settings import TIME_DELTA, CHANNEL_ID
+from discord_announcer.app_settings import TIME_DELTA
 from dateutil.tz import tzlocal
 from discord_announcer.utilities import format_sales
 
 logger = logging.getLogger(__name__)
 
 @shared_task
-def discord_announcer_task(delta):
-    logger.info(f"sending sales for TIME_DELTA {TIME_DELTA} to channel {CHANNEL_ID}")
-
+def discord_announcer_task(delta, corporation_id, division, channel_id):
     if delta == None:
         delta = TIME_DELTA
+    logger.info(f"sending sales for TIME_DELTA {delta} to channel {channel_id} for corp {corporation_id} and division {division}")
 
-    sales = get_transactions_for_timeframe(datetime.now(tz=tzlocal())-timedelta(hours=delta))
+    sales = get_transactions_for_timeframe(datetime.now(tz=tzlocal())-timedelta(hours=delta), corporation_id, division)
+    if not sales:
+        logger.info("No sales found, not sending message")
+        return
+    
+    else:
+        logger.info(f"Found {len(sales)} sales, sending message")
+    
     sales_formatted = format_sales(sales)
-    send_message_to_discord(messages=sales_formatted, channel_id=CHANNEL_ID, hours=TIME_DELTA)
+    send_message_to_discord(messages=sales_formatted, channel_id=channel_id, hours=delta)
