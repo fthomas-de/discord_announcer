@@ -30,3 +30,5 @@ def discord_announcer_task(delta, corporation_id, division, channel_id):
     
     sales_formatted = format_sales(sales)
     send_message_to_discord(messages=sales_formatted, channel_id=channel_id, hours=delta)
+    sales = []
+    sales_formatted = []
