@@ -18,15 +18,15 @@ logger = logging.getLogger(__name__)
 def discord_announcer_task(delta, corporation_id, division, channel_id):
     if delta == None:
         delta = TIME_DELTA
-    logger.info(f"sending sales for TIME_DELTA {delta} to channel {channel_id} for corp {corporation_id} and division {division}")
+    logger.info(f"[discord_announcer] sending sales for TIME_DELTA {delta} to channel {channel_id} for corp {corporation_id} and division {division}")
 
     sales = get_transactions_for_timeframe(datetime.now(tz=tzlocal())-timedelta(hours=delta), corporation_id, division)
     if not sales:
-        logger.info("No sales found, not sending message")
+        logger.info("[discord_announcer] No sales found, not sending message")
         return
     
     else:
-        logger.info(f"Found {len(sales)} sales, sending message")
+        logger.info(f"[discord_announcer] Found {len(sales)} sales, sending message")
     
     sales_formatted = format_sales(sales)
     send_message_to_discord(messages=sales_formatted, channel_id=channel_id, hours=delta)

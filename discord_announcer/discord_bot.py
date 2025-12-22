@@ -34,4 +34,4 @@ def send_message_to_discord(messages: list, channel_id: int, hours: int):
                 #send_message(channel_id=channel_id, message=message, embed=e) # Both
 
         else:
-            logger.error("AADiscordBot not installed, cannot send message to discord")
+            logger.error("[discord_announcer] AADiscordBot not installed, cannot send message to discord")
