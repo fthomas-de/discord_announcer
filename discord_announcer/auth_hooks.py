@@ -46,6 +46,6 @@ from discord_announcer import urls
 
 #     return UrlHook(urls, "discord_announcer", r"^discord_announcer/")
 
-@hooks.register('discord_cogs_hook')
-def register_cogs():
-    return ["discord_announcer.cogs.cog_a", "discord_announcer.cogs.cog_b"]
+#@hooks.register('discord_cogs_hook')
+#def register_cogs():
+#    return ["discord_announcer.cogs.cog_a", "discord_announcer.cogs.cog_b"]
