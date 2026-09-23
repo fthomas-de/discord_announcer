@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `AnnouncerConfig` model, one row per configuration; supports any number of
   configurations at once
 - `AnnouncerConfigAdmin` fallback editor in Django admin
+- The configuration page shows the app version in its title
 - Every Discord message names the corporation and wallet division it comes
   from, as its author line with the corporation logo, e.g.
   "Corp Name [TICK] · Wallet division 5 (Sales)"; the division name is taken
