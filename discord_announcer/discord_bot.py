@@ -9,8 +9,10 @@ def discord_bot_active():
     return apps.is_installed("aadiscordbot")
 
 
-def send_message_to_discord(messages: list, channel_id: int, title: str) -> bool:
-    """Queue one embed per (station, text) pair, titled "<title>: <station>"; False when not possible."""
+def send_message_to_discord(
+    messages: list, channel_id: int, title: str, source: tuple[str, str] | None = None
+) -> bool:
+    """Queue one embed per (station, text) pair, with source as (author line, icon url); False if impossible."""
     if channel_id is None:
         print("No channel ID provided")
         return False
@@ -28,6 +30,11 @@ def send_message_to_discord(messages: list, channel_id: int, title: str) -> bool
             description=message,
             color=Color.nitro_pink(),
         )
+
+        if source:
+            author, icon_url = source
+            e.set_author(name=author, icon_url=icon_url)
+
         send_message(channel_id=channel_id, embed=e)
 
     return True

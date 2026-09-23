@@ -13,7 +13,7 @@ from django.utils import timezone
 from discord_announcer.discord_bot import send_message_to_discord
 from discord_announcer.models import AnnouncerConfig
 from discord_announcer.selects import get_sales_since
-from discord_announcer.utilities import format_sales
+from discord_announcer.utilities import describe_source, format_sales
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,7 @@ def _announce(config: AnnouncerConfig, now: datetime) -> None:
             messages=format_sales(sales),
             channel_id=config.channel_id,
             title=f"Sales (last {hours} hours)",
+            source=describe_source(config),
         ):
             # keep the window open, so these sales go out once sending works
             return

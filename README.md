@@ -33,7 +33,8 @@ ______________________________________________________________________
   announcements are maintained: corporation, wallet division, Discord channel
   and interval
 - One Discord embed per station, listing every item type sold with quantity and
-  total ISK
+  total ISK, headed by the corporation (with logo) and wallet division it comes
+  from
 - Every sale is posted exactly once: each post covers the sales since the
   previous post of the same configuration
 - At most one post per hour and configuration

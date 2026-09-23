@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `AnnouncerConfig` model, one row per configuration; supports any number of
   configurations at once
 - `AnnouncerConfigAdmin` fallback editor in Django admin
+- Every Discord message names the corporation and wallet division it comes
+  from, as its author line with the corporation logo, e.g.
+  "Corp Name [TICK] · Wallet division 5 (Sales)"; the division name is taken
+  from Corp Tools and left out when it is not known
 - The corporation is picked by typing its name, with suggestions from an HTML5
   datalist, the same approach as AA's own optimer
 - "Check tokens" button: reads the wallet of every saved configuration once,

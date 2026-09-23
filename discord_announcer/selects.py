@@ -4,7 +4,8 @@ from allianceauth.services.hooks import get_extension_logger
 
 from discord_announcer.app_settings import REQUIRED_SCOPE
 
-from allianceauth.eveonline.models import EveCharacter
+from allianceauth.eveonline.models import EveCharacter, EveCorporationInfo
+from corptools.models import CorporationWalletDivision
 from esi.models import Token
 
 from .provider import esi
@@ -39,6 +40,15 @@ def get_transactions(corp_id: int, division: int, token: Token | None = None, us
     return esi.client.Wallet.GetCorporationsCorporationIdWalletsDivisionTransactions(
         corporation_id=corp_id, division=division, token=token
     ).results(use_etag=False, use_cache=use_cache)
+
+
+def get_division_name(corporation: EveCorporationInfo, division: int) -> str | None:
+    """Name the corporation gave the wallet division in game, as synced by Corp Tools."""
+    return (
+        CorporationWalletDivision.objects.filter(corporation__corporation=corporation, division=division)
+        .values_list("name", flat=True)
+        .first()
+    )
 
 
 def get_latest_sale(corp_id: int, division: int, token: Token | None = None):

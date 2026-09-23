@@ -2,7 +2,21 @@ from corptools.models import EveLocation, EveItemType
 
 import math
 
+from discord_announcer.selects import get_division_name
+
 millnames = ['',' Thousand',' Million',' Billion',' Trillion']
+
+
+def describe_source(config) -> tuple[str, str]:
+    """Author line and logo naming the corporation and wallet division a post comes from."""
+    corporation = config.corporation
+    division = f"Wallet division {config.division}"
+    division_name = get_division_name(corporation, config.division)
+
+    if division_name:
+        division += f" ({division_name})"
+
+    return f"{corporation.corporation_name} [{corporation.corporation_ticker}] · {division}", corporation.logo_url_64
 
 def millify(n):
     n = float(n)

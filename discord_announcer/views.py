@@ -22,7 +22,7 @@ from discord_announcer.discord_bot import discord_bot_active, send_message_to_di
 from discord_announcer.forms import CORPORATION_DATALIST_ID, AnnouncerConfigFormSet
 from discord_announcer.models import AnnouncerConfig
 from discord_announcer.selects import get_corp_transaction_token, get_latest_sale, get_transactions
-from discord_announcer.utilities import format_sales
+from discord_announcer.utilities import describe_source, format_sales
 
 logger = get_extension_logger(__name__)
 
@@ -174,7 +174,12 @@ def send_latest(request: WSGIRequest) -> HttpResponse:
             )
             continue
 
-        send_message_to_discord(messages=formatted, channel_id=config.channel_id, title=f"Latest sale, {sold_at}")
+        send_message_to_discord(
+            messages=formatted,
+            channel_id=config.channel_id,
+            title=f"Latest sale, {sold_at}",
+            source=describe_source(config),
+        )
         messages.success(
             request,
             _("%(name)s: posted the latest sale (%(sold_at)s).") % {"name": config.name, "sold_at": sold_at},
