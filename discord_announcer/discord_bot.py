@@ -9,8 +9,8 @@ def discord_bot_active():
     return apps.is_installed("aadiscordbot")
 
 
-def send_message_to_discord(messages: list, channel_id: int, hours: int) -> bool:
-    """Queue the messages with AA-Discordbot; False when that was not possible."""
+def send_message_to_discord(messages: list, channel_id: int, title: str) -> bool:
+    """Queue one embed per (station, text) pair, titled "<title>: <station>"; False when not possible."""
     if channel_id is None:
         print("No channel ID provided")
         return False
@@ -24,7 +24,7 @@ def send_message_to_discord(messages: list, channel_id: int, hours: int) -> bool
 
     for header, message in messages:
         e = Embed(
-            title="Sales (last " + str(hours) + " hours): " + header,
+            title=f"{title}: {header}",
             description=message,
             color=Color.nitro_pink(),
         )

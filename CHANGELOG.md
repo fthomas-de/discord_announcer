@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `AnnouncerConfig` model, one row per configuration; supports any number of
   configurations at once
 - `AnnouncerConfigAdmin` fallback editor in Django admin
+- The corporation is picked by typing its name, with suggestions from an HTML5
+  datalist, the same approach as AA's own optimer
+- "Check tokens" button: reads the wallet of every saved configuration once,
+  without posting, and reports per configuration whether it works, which
+  character's token is used, or what is missing (token, in-game role, valid
+  refresh)
+- "Post latest sale" button: posts the newest sale of every active
+  configuration once, however old, without moving its regular rhythm
 
 ### Changed
 
@@ -35,8 +43,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - A failing configuration (missing token, ESI error) is logged and no longer
   stops the remaining configurations of the same run
 - README rewritten for this app, replacing the example plugin text: requirements,
-  installation, permissions, configuration, posting behaviour and the upgrade
-  path from per-variant periodic tasks
+  installation, permissions, configuration including the two buttons, posting
+  behaviour and the upgrade path from per-variant periodic tasks
 
 ### Removed
 
@@ -53,6 +61,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - ESI results are read as objects instead of dicts (`selects.py`,
   `utilities.py`), and fetched without the ETag check, which would otherwise
   raise `HTTPNotModified` whenever the data had not changed
+- A station whose sold item types Corp Tools does not know yet no longer
+  produces a Discord message with an empty text
 - `discord_bot.py`: `discord_bot_active()` was hardcoded to always return `True`
   instead of actually checking whether AADiscordBot is installed, so sending a
   message would crash with `ModuleNotFoundError` on any install without it; now

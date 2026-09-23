@@ -32,6 +32,7 @@ def format_sales(sales) -> list:
             sum_quantity = sum(s.quantity for s in sale)
             if sum_quantity > 0:
                 formatted_sale.append(f"{type_dict[type_id]} x {sum_quantity} for {millify(sum_unit_price)} Isk" )
-        formatted_sales.append( (location_dict[loc_id], "\n".join(formatted_sale)) )
+        if formatted_sale:
+            formatted_sales.append((location_dict[loc_id], "\n".join(formatted_sale)))
 
     return formatted_sales

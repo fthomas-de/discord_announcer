@@ -14,6 +14,11 @@ from allianceauth.eveonline.models import EveCorporationInfo
 from discord_announcer.app_settings import TIME_DELTA
 
 
+# A callable, so migrations store a reference instead of freezing this install's TIME_DELTA. Referenced by migrations.
+def default_interval() -> int:
+    return TIME_DELTA
+
+
 class General(models.Model):
     """Meta model for app permissions"""
 
@@ -54,7 +59,7 @@ class AnnouncerConfig(models.Model):
         help_text=_("Numeric Discord channel ID to post the announcement to."),
     )
     time_delta = models.PositiveIntegerField(
-        default=TIME_DELTA,
+        default=default_interval,
         validators=[MinValueValidator(1)],
         verbose_name=_("Interval (hours)"),
         help_text=_(

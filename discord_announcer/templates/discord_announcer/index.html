@@ -72,11 +72,39 @@
                     </table>
                 </div>
 
-                <div class="form-group mt-3 clearfix">
+                <div class="d-flex flex-wrap gap-2 mt-3">
                     {% translate "Save" as button_text %}
                     {% bootstrap_button button_class="btn btn-primary" content=button_text %}
+
+                    {# these two submit their own forms below, which only carry the csrf token #}
+                    <button type="submit" form="discord-announcer-check-tokens" class="btn btn-secondary">
+                        <i class="fa-solid fa-key fa-fw"></i> {% translate "Check tokens" %}
+                    </button>
+                    <button type="submit" form="discord-announcer-send-latest" class="btn btn-secondary">
+                        <i class="fa-brands fa-discord fa-fw"></i> {% translate "Post latest sale" %}
+                    </button>
                 </div>
+
+                <p class="text-body-secondary small mt-2 mb-0">
+                    {% blocktranslate %}"Check tokens" reads the wallet of every saved row once, the way the
+                    scheduled task does, without posting. "Post latest sale" posts the newest sale of every
+                    active row once, however old, and leaves the regular rhythm untouched. Both work on the
+                    saved rows, so save changes first.{% endblocktranslate %}
+                </p>
             </form>
+
+            <form id="discord-announcer-check-tokens" method="POST" action="{% url 'discord_announcer:check_tokens' %}">
+                {% csrf_token %}
+            </form>
+            <form id="discord-announcer-send-latest" method="POST" action="{% url 'discord_announcer:send_latest' %}">
+                {% csrf_token %}
+            </form>
+
+            <datalist id="{{ corporation_datalist_id }}">
+                {% for name, ticker in corporations %}
+                    <option value="{{ name }}">{{ ticker }}</option>
+                {% endfor %}
+            </datalist>
         </div>
     </div>
 {% endblock %}
@@ -84,4 +112,12 @@
 {% block extra_script %}
     document.querySelectorAll('[data-bs-tooltip="discord-announcer"]')
         .forEach((element) => new bootstrap.Tooltip(element));
+
+    {% translate "Post the latest sale of every active row to Discord now?" as confirm_text %}
+    document.getElementById("discord-announcer-send-latest")
+        .addEventListener("submit", (event) => {
+            if (!confirm("{{ confirm_text|escapejs }}")) {
+                event.preventDefault();
+            }
+        });
 {% endblock %}

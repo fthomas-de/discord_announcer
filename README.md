@@ -39,6 +39,8 @@ ______________________________________________________________________
 - At most one post per hour and configuration
 - A broken configuration (missing token, ESI error) is logged and does not stop
   the others
+- Buttons to check the tokens of all configurations and to post the latest sale
+  of each one on demand
 
 ## Requirements<a name="requirements"></a>
 
@@ -103,7 +105,7 @@ Open **Discord Announcer** in the sidebar. Every row is one announcement:
 | Field              | Meaning                                                                                       |
 | ------------------ | --------------------------------------------------------------------------------------------- |
 | Name               | Label to tell the rows apart                                                                  |
-| Corporation        | Corporation whose wallet is read                                                              |
+| Corporation        | Corporation whose wallet is read. Type to search, then pick one of the suggestions            |
 | Wallet Division    | Wallet division to read, 1 to 7                                                               |
 | Discord Channel ID | Channel to post to. In Discord, enable Developer Mode, then right-click the channel → "Copy Channel ID" |
 | Interval (hours)   | How often the row posts, and at the same time the span each post covers. At least 1          |
@@ -111,6 +113,16 @@ Open **Discord Announcer** in the sidebar. Every row is one announcement:
 
 The last row of the table is always empty and adds a new announcement when
 filled in. Tick **Remove** and save to delete a row.
+
+Two buttons below the table work on the saved rows, so save changes first:
+
+- **Check tokens** reads the wallet of every row once, the way the periodic task
+  does, without posting. For each row it reports which character's token is
+  used, or what is missing: a token with the wallet scope, the in-game role, or a
+  token that can still be refreshed.
+- **Post latest sale** posts the newest sale ESI still returns for every active
+  row, however old, after asking for confirmation. The regular rhythm of the rows
+  is not changed.
 
 ## When a Message Is Posted<a name="when-a-message-is-posted"></a>
 

@@ -55,7 +55,9 @@ def _announce(config: AnnouncerConfig, now: datetime) -> None:
         )
 
         if not send_message_to_discord(
-            messages=format_sales(sales), channel_id=config.channel_id, hours=hours
+            messages=format_sales(sales),
+            channel_id=config.channel_id,
+            title=f"Sales (last {hours} hours)",
         ):
             # keep the window open, so these sales go out once sending works
             return
