@@ -69,6 +69,11 @@ class AnnouncerConfigForm(forms.ModelForm):
         if self.instance.pk:
             self.initial["corporation"] = self.instance.corporation.corporation_name
 
+        # A callable model default makes Django expect a hidden "initial-" input,
+        # which the bootstrap fields do not render; without it the untouched empty
+        # row counts as changed and blocks saving. The default is stable, so off.
+        self.fields["time_delta"].show_hidden_initial = False
+
         self.fields["channel_id"].help_text = _(
             "Enable Developer Mode in Discord, then right-click the channel "
             '→ "Copy Channel ID".'

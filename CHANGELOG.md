@@ -67,6 +67,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   raise `HTTPNotModified` whenever the data had not changed
 - A station whose sold item types Corp Tools does not know yet no longer
   produces a Discord message with an empty text
+- Saving the configuration page failed with "This field is required" on the
+  empty last row whenever that row was left untouched, so existing rows could
+  not be changed (since 0.0.19)
 - `discord_bot.py`: `discord_bot_active()` was hardcoded to always return `True`
   instead of actually checking whether AADiscordBot is installed, so sending a
   message would crash with `ModuleNotFoundError` on any install without it; now
