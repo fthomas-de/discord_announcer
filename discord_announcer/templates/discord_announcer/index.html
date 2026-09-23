@@ -1,25 +1,87 @@
 {% extends 'discord_announcer/base.html' %}
 
 {% load i18n %}
-{% load humanize %}
+{% load django_bootstrap5 %}
 
 {% block details %}
     <div class="card card-primary">
         <div class="card-header">
-            <div class="card-title">{% translate "Headline" %}</div>
+            <div class="card-title">{{ title }}</div>
         </div>
 
         <div class="card-body">
-            {{ text }}
+            <p class="text-body-secondary small">
+                {% blocktranslate %}One row per corporation/channel combination the scheduled task
+                should announce sales for. Each row posts every interval, covering the sales since its
+                previous post, with at least one hour between two posts.{% endblocktranslate %}
+            </p>
+
+            <form role="form" action="" method="POST">
+                {% csrf_token %}
+                {{ formset.management_form }}
+
+                {% if formset.non_form_errors %}
+                    <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+                {% endif %}
+
+                <div class="table-responsive">
+                    <table class="table table-sm align-top">
+                        {# help texts live in the headers once, instead of under every row #}
+                        {% with fields=formset.empty_form %}
+                            <thead>
+                                <tr>
+                                    <th scope="col">{{ fields.name.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.name.help_text %}</th>
+                                    <th scope="col">{{ fields.corporation.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.corporation.help_text %}</th>
+                                    <th scope="col">{{ fields.division.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.division.help_text %}</th>
+                                    <th scope="col">{{ fields.channel_id.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.channel_id.help_text %}</th>
+                                    <th scope="col">{{ fields.time_delta.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.time_delta.help_text %}</th>
+                                    <th scope="col">{{ fields.is_active.label }}</th>
+                                    <th scope="col" class="text-end">{% translate "Remove" %}</th>
+                                </tr>
+                            </thead>
+                        {% endwith %}
+
+                        <tbody>
+                            {% for config_form in formset %}
+                                <tr>
+                                    {% if config_form.non_field_errors %}
+                                        <td colspan="7">
+                                            <div class="alert alert-danger mb-0">{{ config_form.non_field_errors }}</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                    {% endif %}
+                                    <td>
+                                        {{ config_form.id }}
+                                        {% bootstrap_field config_form.name show_label=False show_help=False %}
+                                    </td>
+                                    <td>{% bootstrap_field config_form.corporation show_label=False show_help=False %}</td>
+                                    <td>{% bootstrap_field config_form.division show_label=False show_help=False %}</td>
+                                    <td>{% bootstrap_field config_form.channel_id show_label=False show_help=False %}</td>
+                                    <td>{% bootstrap_field config_form.time_delta show_label=False show_help=False %}</td>
+                                    {# checkboxes are shorter than the inputs, nudge them to the inputs' centre line #}
+                                    <td class="pt-2">{% bootstrap_field config_form.is_active show_label=False %}</td>
+                                    <td class="text-end pt-2">
+                                        {% if config_form.instance.pk %}
+                                            {% bootstrap_field config_form.DELETE show_label=False %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="form-group mt-3 clearfix">
+                    {% translate "Save" as button_text %}
+                    {% bootstrap_button button_class="btn btn-primary" content=button_text %}
+                </div>
+            </form>
         </div>
     </div>
 {% endblock %}
 
-{% block extra_javascript %}
-{% endblock %}
-
-{% block extra_css %}
-{% endblock %}
-
 {% block extra_script %}
+    document.querySelectorAll('[data-bs-tooltip="discord-announcer"]')
+        .forEach((element) => new bootstrap.Tooltip(element));
 {% endblock %}

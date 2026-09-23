@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [In Development] - Unreleased
 
+### Added
+
+- Sidebar menu entry and settings page (`discord_announcer:index`) to manage
+  announcer configurations (corporation, wallet division, Discord channel,
+  interval) instead of hand-configuring a Celery Beat periodic task with
+  positional arguments per corp/channel combination; field help is shown as
+  tooltips in the column headers
+- `AnnouncerConfig` model, one row per configuration; supports any number of
+  configurations at once
+- `AnnouncerConfigAdmin` fallback editor in Django admin
+
+### Changed
+
+- `discord_announcer_task` no longer takes `(delta, corporation_id, division,
+  channel_id)` arguments; it now takes none and processes every active
+  `AnnouncerConfig` itself. Existing per-variant periodic tasks in Celery Beat
+  must be replaced with a single periodic task calling
+  `discord_announcer.tasks.discord_announcer_task` with no arguments, running
+  more often than the shortest interval (e.g. every 15 minutes)
+- The interval of a configuration is both its posting rhythm and its window:
+  a configuration posts once its interval has passed since its last run,
+  covering exactly the sales since that run, so sales are neither posted twice
+  nor skipped; never more often than once per hour. The window also moves on
+  when there were no sales, but not when sending was impossible. Reactivating
+  a configuration starts a fresh window
+- A failing configuration (missing token, ESI error) is logged and no longer
+  stops the remaining configurations of the same run
+- README rewritten for this app, replacing the example plugin text: requirements,
+  installation, permissions, configuration, posting behaviour and the upgrade
+  path from per-variant periodic tasks
+
+### Removed
+
+- `LastRun` model, superseded by `AnnouncerConfig.last_run_at`
+
+### Fixed
+
+- Compatibility with Alliance Auth v5 / django-esi 9.x: `pyproject.toml` no longer
+  pins `allianceauth<5`
+- ESI client migrated from the removed `esi.clients.EsiClientProvider` to the new
+  `esi.openapi_clients.ESIClientProvider` (`provider.py`, `selects.py`), including
+  the renamed wallet transactions operation and passing the `Token` object instead
+  of a raw access token string
+- ESI results are read as objects instead of dicts (`selects.py`,
+  `utilities.py`), and fetched without the ETag check, which would otherwise
+  raise `HTTPNotModified` whenever the data had not changed
+- `discord_bot.py`: `discord_bot_active()` was hardcoded to always return `True`
+  instead of actually checking whether AADiscordBot is installed, so sending a
+  message would crash with `ModuleNotFoundError` on any install without it; now
+  performs the real `apps.is_installed("aadiscordbot")` check
+- `discord_bot.py`: the "AADiscordBot not installed" error log was attached to a
+  `for...else` instead of the intended `if/else`, so it never actually fired
+
 ## [0.0.9] - 2024-06-16
 
 ### Removed

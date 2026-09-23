@@ -13,10 +13,10 @@ def millify(n):
 
 def format_sales(sales) -> list:
     # get all location IDs
-    locations = set(sale['location_id'] for sale in sales) 
+    locations = set(sale.location_id for sale in sales)
     location_dict = {loc.location_id: loc.location_name for loc in EveLocation.objects.filter(location_id__in=locations)}
 
-    type_ids = set(sale['type_id'] for sale in sales)
+    type_ids = set(sale.type_id for sale in sales)
     type_dict = {t['type_id']: t['name'] for t in EveItemType.objects.filter(type_id__in=type_ids).values('type_id', 'name').order_by('name')}
 
     # header = location id
@@ -27,9 +27,9 @@ def format_sales(sales) -> list:
 
         for type_id in type_dict.keys():
             # sales for type id and location id
-            sale = [s for s in sales if s['location_id'] == loc_id and s['type_id'] == type_id]
-            sum_unit_price = sum(s['unit_price'] * s['quantity'] for s in sale)
-            sum_quantity = sum(s['quantity'] for s in sale)
+            sale = [s for s in sales if s.location_id == loc_id and s.type_id == type_id]
+            sum_unit_price = sum(s.unit_price * s.quantity for s in sale)
+            sum_quantity = sum(s.quantity for s in sale)
             if sum_quantity > 0:
                 formatted_sale.append(f"{type_dict[type_id]} x {sum_quantity} for {millify(sum_unit_price)} Isk" )
         formatted_sales.append( (location_dict[loc_id], "\n".join(formatted_sale)) )

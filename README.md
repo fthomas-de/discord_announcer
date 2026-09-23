@@ -1,44 +1,27 @@
-DIVISION = 5
-CORPORATION_ID = 98633815
-REF_TYPE = ['market_transaction']
-TIME_DELTA = 12
-REQUIRED_SCOPE = "esi-wallet.read_corporation_wallets.v1"
-CHANNEL_ID = 1413885436366950582
+# Discord Announcer<a name="discord-announcer"></a>
 
-
-
-
-
-
-# Example Plugin App for Alliance Auth (GitHub Version)<a name="example-plugin-app-for-alliance-auth-github-version"></a>
-
-This is an example plugin app for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth)
-(AA) that can be used as a starting point to develop custom plugins.
+A plugin for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA) that
+posts the market sales of corporation wallet divisions to Discord channels, at a
+fixed interval per configuration.
 
 ![License](https://img.shields.io/badge/license-GPLv3-green)
-![python](https://img.shields.io/badge/python-3.8-informational)
-![django](https://img.shields.io/badge/django-3.2-informational)
-![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)
-
-_(These badges are examples, you can and should replace them with your own)_
-
-For the GitLab version of this example app, please have a look over here, Erik
-Kalkoken was so friendly to provide it » [Alliance Auth Example App (GitLab Version)](https://gitlab.com/ErikKalkoken/allianceauth-example-plugin)
+![python](https://img.shields.io/badge/python-3.10+-informational)
+![allianceauth](https://img.shields.io/badge/allianceauth-5.x-informational)
 
 ______________________________________________________________________
 
 <!-- mdformat-toc start --slug=github --maxlevel=6 --minlevel=1 -->
 
-- [Example Plugin App for Alliance Auth (GitHub Version)](#example-plugin-app-for-alliance-auth-github-version)
+- [Discord Announcer](#discord-announcer)
   - [Features](#features)
-  - [How to Use It](#how-to-use-it)
-    - [Cloning From Repo](#cloning-from-repo)
-    - [Renaming the App](#renaming-the-app)
-  - [Clearing Migrations](#clearing-migrations)
-  - [Writing Unit Tests](#writing-unit-tests)
-  - [Installing Into Your Dev AA](#installing-into-your-dev-aa)
-  - [Installing Into Production AA](#installing-into-production-aa)
-  - [Contribute](#contribute)
+  - [Requirements](#requirements)
+  - [Installation](#installation)
+  - [Permissions](#permissions)
+  - [Configuration](#configuration)
+  - [When a Message Is Posted](#when-a-message-is-posted)
+  - [Settings](#settings)
+  - [Upgrading From 0.0.17 or Earlier](#upgrading-from-0017-or-earlier)
+  - [Development](#development)
 
 <!-- mdformat-toc end -->
 
@@ -46,170 +29,137 @@ ______________________________________________________________________
 
 ## Features<a name="features"></a>
 
-- The plugin can be installed, upgraded (and removed) into an existing AA
-  installation using PyInstaller.
-- It has its own menu item in the sidebar.
-- It has one view that shows a panel and some text
+- Own entry in the AA sidebar, leading to a page where any number of
+  announcements are maintained: corporation, wallet division, Discord channel
+  and interval
+- One Discord embed per station, listing every item type sold with quantity and
+  total ISK
+- Every sale is posted exactly once: each post covers the sales since the
+  previous post of the same configuration
+- At most one post per hour and configuration
+- A broken configuration (missing token, ESI error) is logged and does not stop
+  the others
 
-## How to Use It<a name="how-to-use-it"></a>
+## Requirements<a name="requirements"></a>
 
-To use this example as a basis for your own development, just fork this repo and then
-clone it on your dev machine.
+- Alliance Auth 5.x
+- [AA-Discordbot](https://github.com/Solar-Helix-Independent-Transport/allianceauth-discordbot),
+  installed and configured; without it nothing is sent
+- [Corp Tools](https://github.com/Solar-Helix-Independent-Transport/allianceauth-corp-tools),
+  for station and item names
+- For every announced corporation, a character of that corporation with:
+  - an ESI token with the scope `esi-wallet.read_corporation_wallets.v1`, for
+    example the one created when adding the corporation to Corp Tools
+  - the in-game role Accountant or Junior Accountant
 
-You then should rename the app, and then you can install it into your AA dev
-installation.
+## Installation<a name="installation"></a>
 
-### Cloning From Repo<a name="cloning-from-repo"></a>
-
-For this app, we're assuming that you have all your AA projects, your virtual
-environment, and your AA installation under one top folder (e.g. aa-dev).
-
-This should look something like this:
-
-```text
-aa-dev
-|- venv/
-|- myauth/
-|- aa-example-plugin
-|- (other AA projects ...)
-```
-
-Then just cd into the top folder (e.g. aa-dev) and clone the repo from your fork.
-You can give the repo a new name right away (e.g. `aa-your-app-name`). You also want
-to create a new git repo for it.
-Finally, enable [pre-commit](https://pre-commit.com) to enable automatic code style
-checking.
+Install the app into the virtual environment of your AA installation:
 
 ```bash
-git clone https://github.com/YourName/aa-example-plugin.git aa-your-app-name
-cd aa-your-app-name
-rm -rf .git
-git init
-pre-commit install
+pip install git+https://github.com/fthomas-de/discord_announcer.git
 ```
 
-### Renaming the App<a name="renaming-the-app"></a>
+Add it to `INSTALLED_APPS` in `settings/local.py`:
 
-Before installing this app into your dev AA you need to rename it to something
-suitable for your development project. Otherwise, you risk not being able to install
-additional apps that might also be called example.
-
-Here is an overview of the places that you need to edit to adopt the name.
-
-Easiest is to just find & replace `example` with your new app name in all files
-listed below.
-
-One small warning about picking names: Python is a bit particular about what special
-characters are allowed for names of modules and packages. To avoid any pitfalls, I
-would therefore recommend using only normal characters (a-z) in your app's name
-unless you know exactly what you're doing.
-
-| Location                                 | Description                                                                            |
-| ---------------------------------------- | -------------------------------------------------------------------------------------- |
-| `./example/`                             | Folder name                                                                            |
-| `./example/static/example/`              | Folder name                                                                            |
-| `./example/templates/example/`           | Folder name                                                                            |
-| `./pyproject.cfg`                        | Update module name for version import, update package name, update title, author, etc. |
-| `./example/apps.py`                      | App name                                                                               |
-| `./example/__init__.py`                  | App name                                                                               |
-| `./example/auth_hooks.py`                | Menu hook config incl. icon and label of your app's menu item appearing in the sidebar |
-| `./example/models.py`                    | App name                                                                               |
-| `./example/urls.py`                      | App name                                                                               |
-| `./example/views.py`                     | Permission name and template path                                                      |
-| `./example/templates/example/base.html`  | Title of your app to be shown in all views and as title in the browser tab             |
-| `./example/templates/example/index.html` | Template path                                                                          |
-| `./testauth/local.py`                    | App name in `PACKAGE` constant                                                         |
-| `./.coveragerc`                          | App name                                                                               |
-| `./MANIFEST.in`                          | App name                                                                               |
-| `./README.md`                            | Clear content                                                                          |
-| `./LICENSE`                              | Replace with your own license                                                          |
-| `./tox.ini`                              | App name                                                                               |
-| `./.isort.cfg`                           | App name for `import_heading_firstparty`                                               |
-| `./Makefile`                             | App name and package name                                                              |
-
-## Clearing Migrations<a name="clearing-migrations"></a>
-
-Instead of renaming your app in the migrations, it's easier to just recreate them
-later in the process. For this to work, you need to delete the old migration files in
-your `migrations` folder.
-
-```bash
-rm your-app-name/migrations/0001_initial.py
-rm -rf your-app-name/migrations/_pycache
+```python
+INSTALLED_APPS += [
+    # ...
+    "discord_announcer",
+]
 ```
 
-## Writing Unit Tests<a name="writing-unit-tests"></a>
+Add the periodic task to `settings/local.py`. It only checks which
+configurations are due, so it should run more often than the shortest interval
+you intend to use:
 
-Write your unit tests in `your-app-name/tests/` and make sure that you use a "test\_"
-prefix for files with your unit tests.
-
-## Installing Into Your Dev AA<a name="installing-into-your-dev-aa"></a>
-
-Once you've cloned or copied all files into place and finished renaming the app,
-you're ready to install it to your dev AA instance.
-
-Make sure you're in your venv. Then install it with pip in editable mode:
-
-```bash
-pip install -e aa-your-app-name
+```python
+CELERYBEAT_SCHEDULE["discord_announcer_task"] = {
+    "task": "discord_announcer.tasks.discord_announcer_task",
+    "schedule": crontab(minute="*/15"),
+}
 ```
 
-First add your app to the Django project by adding the name of your app to
-INSTALLED_APPS in `settings/local.py`.
-
-Next, we will create new migrations for your app:
-
-```bash
-python manage.py makemigrations
-```
-
-Then run a check to see if everything is set up correctly.
-
-```bash
-python manage.py check
-```
-
-In case they're errors make sure to fix them before proceeding.
-
-Next, perform migrations to add your model to the database:
+Run the migrations, collect static files, and restart AA and the Celery workers:
 
 ```bash
 python manage.py migrate
+python manage.py collectstatic --noinput
 ```
 
-Finally, restart your AA server and that's it.
+## Permissions<a name="permissions"></a>
 
-## Installing Into Production AA<a name="installing-into-production-aa"></a>
+| Permission                            | Grants                                          |
+| ------------------------------------- | ----------------------------------------------- |
+| `discord_announcer.basic_access`      | The sidebar entry and the configuration page     |
 
-To install your plugin into a production AA, run this command within the virtual
-Python environment of your AA installation:
+Everybody with this permission can change every configuration, so grant it only
+to the people maintaining the announcements.
+
+## Configuration<a name="configuration"></a>
+
+Open **Discord Announcer** in the sidebar. Every row is one announcement:
+
+| Field              | Meaning                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| Name               | Label to tell the rows apart                                                                  |
+| Corporation        | Corporation whose wallet is read                                                              |
+| Wallet Division    | Wallet division to read, 1 to 7                                                               |
+| Discord Channel ID | Channel to post to. In Discord, enable Developer Mode, then right-click the channel → "Copy Channel ID" |
+| Interval (hours)   | How often the row posts, and at the same time the span each post covers. At least 1          |
+| Active             | Switched off rows are skipped                                                                 |
+
+The last row of the table is always empty and adds a new announcement when
+filled in. Tick **Remove** and save to delete a row.
+
+## When a Message Is Posted<a name="when-a-message-is-posted"></a>
+
+On every run of the periodic task, each active row is handled like this:
+
+1. If its interval has not passed since its last run, nothing happens.
+2. Otherwise, the sales since its last run are read from ESI. On the first run
+   after the row was created or switched back on, the sales of the last interval
+   are read instead.
+3. If there were sales, one message per station is posted. Its title names the
+   hours actually covered, which can be a little longer than the interval when
+   the periodic task ran late.
+4. The row's last run moves to now, also when there were no sales.
+
+If nothing could be sent because AA-Discordbot is missing, or reading the sales
+failed, the last run stays where it was, and the sales are posted with the next
+run that succeeds.
+
+Sales at stations or of item types that Corp Tools does not know yet are left
+out of the message.
+
+## Settings<a name="settings"></a>
+
+Optional, in `settings/local.py`:
+
+| Name             | Default                                    | Description                               |
+| ---------------- | ------------------------------------------ | ----------------------------------------- |
+| `TIME_DELTA`     | `12`                                       | Interval in hours preset for new rows     |
+| `REQUIRED_SCOPE` | `"esi-wallet.read_corporation_wallets.v1"` | Scope a token needs to be used by the app |
+
+## Upgrading From 0.0.17 or Earlier<a name="upgrading-from-0017-or-earlier"></a>
+
+Up to 0.0.17, every announcement was a periodic task of its own, with interval,
+corporation ID, division and channel ID as its arguments. The task no longer
+takes arguments, so these periodic tasks fail from now on.
+
+1. Enter every former periodic task as a row on the configuration page.
+2. Delete the old periodic tasks in the Django admin under
+   **Periodic Tasks → Periodic tasks**.
+3. Add the single periodic task from [Installation](#installation).
+
+## Development<a name="development"></a>
+
+With AA, its virtual environment and this repository under one folder, install
+the app in editable mode:
 
 ```bash
-pip install git+https://github.com/YourName/aa-your-app-name
+pip install -e discord_announcer
 ```
 
-Alternatively, you can create a package file and manually upload it to your
-production AA:
-
-```bash
-pip install build
-python -m build
-```
-
-You'll find the package under `./dist/aa-your-app-name.tar.gz` after this.
-
-Install your package directly from the package file:
-
-```bash
-pip install aa-your-app-name.tar.gz
-```
-
-Then add your app to `INSTALLED_APPS` in `settings/local.py`, run migrations and
-restart your allianceserver.
-
-## Contribute<a name="contribute"></a>
-
-If you've made a new app for AA, please consider sharing it with the rest of the
-community. For any questions on how to share your app, please contact the AA devs on
-their Discord. You find the current community creations
-[here](https://gitlab.com/allianceauth/community-creations).
+Then add it to `INSTALLED_APPS` of your dev AA, run `python manage.py check` and
+`python manage.py migrate`, and restart the server.
