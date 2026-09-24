@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [In Development] - Unreleased
 
+## [0.0.21] - 2026-09-23
+
+### Added
+
+- The configuration page shows the app version in its title
+
+### Fixed
+
+- Saving the configuration page failed with "This field is required" on the
+  empty last row whenever that row was left untouched, so existing rows could
+  not be changed (since 0.0.19)
+
+## [0.0.20] - 2026-09-23
+
+### Added
+
+- Every Discord message names the corporation and wallet division it comes
+  from, as its author line with the corporation logo, e.g.
+  "Corp Name [TICK] · Wallet division 5 (Sales)"; the division name is taken
+  from Corp Tools and left out when it is not known
+
+## [0.0.19] - 2026-09-23
+
+### Added
+
+- The corporation is picked by typing its name, with suggestions from an HTML5
+  datalist, the same approach as AA's own optimer
+- "Check tokens" button: reads the wallet of every saved configuration once,
+  without posting, and reports per configuration whether it works, which
+  character's token is used, or what is missing (token, in-game role, valid
+  refresh)
+- "Post latest sale" button: posts the newest sale of every active
+  configuration once, however old, without moving its regular rhythm
+
+### Fixed
+
+- Installations whose `TIME_DELTA` differs from 12 were asked to run
+  `makemigrations`, because the setting's value had been frozen into the
+  migrations as the interval default; the default is now a callable
+  (migration `0005`)
+- A station whose sold item types Corp Tools does not know yet no longer
+  produces a Discord message with an empty text
+
+## [0.0.18] - 2026-09-23
+
+> [!NOTE]
+>
+> **This version needs Alliance Auth v5.** The periodic tasks with arguments
+> used so far stop working: enter them as rows on the new configuration page,
+> delete them in the admin, and add the single periodic task described in the
+> README.
+
 ### Added
 
 - Sidebar menu entry and settings page (`discord_announcer:index`) to manage
@@ -17,19 +69,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `AnnouncerConfig` model, one row per configuration; supports any number of
   configurations at once
 - `AnnouncerConfigAdmin` fallback editor in Django admin
-- The configuration page shows the app version in its title
-- Every Discord message names the corporation and wallet division it comes
-  from, as its author line with the corporation logo, e.g.
-  "Corp Name [TICK] · Wallet division 5 (Sales)"; the division name is taken
-  from Corp Tools and left out when it is not known
-- The corporation is picked by typing its name, with suggestions from an HTML5
-  datalist, the same approach as AA's own optimer
-- "Check tokens" button: reads the wallet of every saved configuration once,
-  without posting, and reports per configuration whether it works, which
-  character's token is used, or what is missing (token, in-game role, valid
-  refresh)
-- "Post latest sale" button: posts the newest sale of every active
-  configuration once, however old, without moving its regular rhythm
 
 ### Changed
 
@@ -48,8 +87,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - A failing configuration (missing token, ESI error) is logged and no longer
   stops the remaining configurations of the same run
 - README rewritten for this app, replacing the example plugin text: requirements,
-  installation, permissions, configuration including the two buttons, posting
-  behaviour and the upgrade path from per-variant periodic tasks
+  installation, permissions, configuration, posting behaviour and the upgrade
+  path from per-variant periodic tasks
 
 ### Removed
 
@@ -66,11 +105,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - ESI results are read as objects instead of dicts (`selects.py`,
   `utilities.py`), and fetched without the ETag check, which would otherwise
   raise `HTTPNotModified` whenever the data had not changed
-- A station whose sold item types Corp Tools does not know yet no longer
-  produces a Discord message with an empty text
-- Saving the configuration page failed with "This field is required" on the
-  empty last row whenever that row was left untouched, so existing rows could
-  not be changed (since 0.0.19)
 - `discord_bot.py`: `discord_bot_active()` was hardcoded to always return `True`
   instead of actually checking whether AADiscordBot is installed, so sending a
   message would crash with `ModuleNotFoundError` on any install without it; now
