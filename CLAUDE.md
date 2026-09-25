@@ -39,6 +39,20 @@ change to `urls.py` or `views.py`, a `NoReverseMatch` usually means the server
 still runs the old code. Templates are read fresh on every request. The Celery
 worker never reloads - restart it before testing anything the task does.
 
+## Release
+
+Read by the personal skills `/commit` and `/push`; the same shape in every
+app. Commands run from `~/aa-dev/working/myauth`.
+
+- App: `discord_announcer`
+- Version file: `discord_announcer/__init__.py`
+- Changelog section: `[In Development] - Unreleased`
+- Tests while working: `~/bin/eos-test discord_announcer.tests.<module>`
+- Suite without translation tests: `~/bin/eos-test discord_announcer --exclude-tag translations`
+- Checks: `~/aa-dev/venv/bin/python manage.py makemigrations discord_announcer --check --dry-run`
+- Translations: none yet (`discord_announcer/locale/` is empty)
+- Translation tests: none yet
+
 ## The database is irreplaceable
 
 `aa_dev` holds ESI-pulled corptools data that cannot be fetched again. There
@@ -96,10 +110,11 @@ language must not depend on who clicked a button.
 The suite lives in `discord_announcer/tests/`, run from the AA instance:
 
 ```bash
-~/bin/eos-test discord_announcer
+~/bin/eos-test discord_announcer --exclude-tag translations
 ```
 
-or on its own against the bundled sqlite test project:
+(`--exclude-tag translations` keeps the command the same as in the other
+apps; there are no translation tests yet.) Or on its own against the bundled sqlite test project:
 
 ```bash
 ~/aa-dev/venv/bin/python runtests.py discord_announcer
@@ -129,15 +144,13 @@ Show commands to the user without the `wsl.exe` wrapper.
 
 ## Committing
 
-The user commits, always. Never run `git commit` or `git push`.
+Commits and pushes only go through the user's personal skills `/commit`
+and `/push`, never unasked; both read `## Release` above. While working on
+a feature, run only the affected test modules - the full suite runs at
+`/commit`.
 
 `CHANGELOG.md` is written along with every change, unasked, under
-`[In Development] - Unreleased`. When the user commits or asks for it:
-
-1. If `discord_announcer/__init__.py` still has the version of the last commit,
-   raise the patch digit and say which old and new version that is.
-2. Split the running section across the versions, at the commit that raised
-   the version in between (`git show <commit>:discord_announcer/__init__.py`).
+`[In Development] - Unreleased`.
 
 There are no translation catalogues yet (`discord_announcer/locale/` is empty);
 the page strings are marked for gettext.
