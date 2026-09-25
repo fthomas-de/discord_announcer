@@ -1,18 +1,15 @@
 [run]
 branch = True
-source = example
+# the package this repo ships; "example" stood here and measured nothing
+source = discord_announcer
+omit =
+    discord_announcer/migrations/*
+    discord_announcer/tests/*
 
 [report]
+show_missing = True
+skip_covered = True
 exclude_lines =
-    if self.debug:
     pragma: no cover
     raise NotImplementedError
     if __name__ == .__main__.:
-ignore_errors = True
-omit =
-    setup.py
-    */tests.py
-    */tests/*
-    */migrations/*
-    doc/*
-    */scripts/*

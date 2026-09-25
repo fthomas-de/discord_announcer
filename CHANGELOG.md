@@ -5,7 +5,88 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [In Development] - Unreleased
+## [0.0.22] - 2026-09-25
+
+> [!NOTE]
+>
+> **Tokens need one more scope and a role check.** The token is chosen the way
+> corptools chooses its own: every token of the corporation with the wallet
+> scope and `esi-characters.read_corporation_roles.v1` is tried in turn, and
+> the first whose character holds CEO, Director, Accountant or Junior
+> Accountant is used. A token added without the roles scope is no longer
+> picked; add it again. Migration `0006` has to be applied.
+
+### Added
+
+- A test suite, `discord_announcer/tests/`: the rhythm, the windows, the
+  token choice, the form, both buttons and the migrations, with ESI and
+  Discord replaced by stand-ins. The scratch scripts every change used to be
+  checked with were gone with the session that wrote them.
+
+### Changed
+
+- Every window after a row's first starts after the newest transaction the
+  previous one saw, not after a point in time (`last_transaction_id`,
+  migration `0006`). Older pages are fetched with `from_id` when a window
+  reaches back further than ESI's 2500 per answer, up to five pages.
+- A row counts as due one minute before its interval has passed. The
+  periodic task runs on a fixed tick and `last_run_at` carries the queue's
+  latency, so a row run at 10:00:00.8 was not due at 11:00:00.5 and waited
+  for the next tick - 75 minutes instead of 60, and a twelve hour row
+  wandered by one tick per post.
+- A row that fails - no token, a missing role, an invalid token - is tried
+  again one interval later instead of on every tick (`last_attempt_at`,
+  migration `0006`), and the failure is logged as one warning without a
+  traceback. It used to write 96 tracebacks a day and count every 403 against
+  the ESI error limit.
+- The token is chosen with corptools' `get_corp_token`, see the note above.
+  The first token with the wallet scope was taken before, and a row failed
+  every run as soon as that character lacked the role, although another
+  member would have worked.
+- Amounts keep two decimals and pick their unit after rounding: 1.49 billion
+  read "1 Billion", 999,999 read "1000 Thousand". "Isk" reads "ISK".
+- Stations are listed by name, not by location id.
+- Field names are in sentence case ("Wallet division", "Discord channel ID"),
+  the help texts say what the row actually does - each post covers the sales
+  since its previous run - and the channel ID's help text lives on the model
+  instead of twice in two versions (migration `0006`).
+- `pyproject.toml` requires Alliance Auth 5 and corptools: AA 4 has no
+  `esi.openapi_clients`, and without corptools pip installed fine and Alliance
+  Auth then failed to start. AA-Discordbot is an optional extra. Description,
+  author and links are this app's, not the example plugin's.
+- `testauth`, `runtests.py`, `tox.ini` and `.coveragerc` run this app now:
+  they named the example plugin's package `example`, so nothing ever ran. The
+  test project uses a sqlite database of its own.
+- The task logs through Alliance Auth's extension logger like the rest of the
+  app; its messages went to the Celery worker's log instead of
+  `extensions.log`.
+
+### Fixed
+
+- **Sales could get lost.** ESI hands out the transactions from a cache of
+  up to an hour, but a window ended at the time of the run. A sale made at
+  10:50 appeared only after the 11:00 run had moved the window on - dated
+  before it - and the window starting at 11:00 never posted it. With the
+  watermark above, every sale is posted once, as the README says.
+- Sales at a station or of an item type Corp Tools does not know yet were
+  left out, and the window moved past them: lost for good. They are posted
+  as "Location <id>" and "Type <id>" now, and "Post latest sale" posts them
+  too instead of warning.
+- The task could run twice at the same time after a worker outage and post
+  the same sales twice. It runs through `QueueOnce`, as corptools' tasks do.
+- Switching a row back on in the Django admin did not start a fresh window;
+  only the configuration page did. The model does it now, for both.
+- "Sales (last 1 hours)" reads "Sales (last 1 hour)".
+
+### Removed
+
+- The `REQUIRED_SCOPE` setting: ESI decides the scope, and any other value
+  only ever made every row fail. `REF_TYPE`, which nothing read, and three
+  commented out settings carrying a real corporation and channel ID.
+- Leftovers of the example plugin: `test_example.py`, a commented out cogs
+  hook, the isort heading "AA Example App", pre-commit hooks for JavaScript,
+  CSS and GitHub workflows this repository does not have, and an empty
+  provider subclass.
 
 ## [0.0.21] - 2026-09-23
 
@@ -112,83 +193,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `discord_bot.py`: the "AADiscordBot not installed" error log was attached to a
   `for...else` instead of the intended `if/else`, so it never actually fired
 
-## [0.0.9] - 2024-06-16
+## [0.0.1] - [0.0.9] - 2022-03-12 to 2024-06-16
 
-### Removed
-
-- Support for Python 3.8 and Python 3.9
-
-## [0.0.8] - 2024-03-16
-
-> [!NOTE]
->
-> **This version needs at least Alliance Auth v4.0.0!**
-
-### Added
-
-- Compatibility to Alliance Auth v4
-  - Bootstrap 5
-  - Django 4.2
-
-### Removed
-
-- Compatibility to Alliance Auth v3
-
-## [0.0.7] - 2023-09-27
-
-> [!NOTE]
->
-> **This is the last version compatible with Alliance Auth v3.**
-
-### Changed
-
-- Moved the build process to PEP 621 / pyproject.toml
-- Test suite updated
-
-## [0.0.6] - 2023-07-23
-
-### Added
-
-- Ukrainian to language handling in `Makefile`
-
-## [0.0.5] - 2023-04-18
-
-### Added
-
-- Directory for translation files
-
-## [0.0.4] - 2022-11-26
-
-### Added
-
-- Directory for static files
-
-### Changed
-
-- GitHub actions updated
-- `pre-commit` config updated and applied
-- Example test improved
-
-## [0.0.3] - 2022-09-15
-
-### Added
-
-- `SITE_URL` to test settings
-
-## [0.0.2] - 2022-08-17
-
-### Added
-
-- Build artifact to GitHub workflows
-- `MANIFEST.in` re-added
-
-### Changed
-
-- Test settings updated for Alliance Auth v3
-- Package name in setup.cfg for PyPi
-
-## [0.0.1] - 2022-03-12
-
-### Added
-
-- Initial version
+These versions are the example plugin this app was started from
+(ppfeufer's aa-example-plugin). Their entries described the template, not
+this app, and are left out.

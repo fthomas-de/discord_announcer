@@ -51,9 +51,12 @@ ______________________________________________________________________
 - [Corp Tools](https://github.com/Solar-Helix-Independent-Transport/allianceauth-corp-tools),
   for station and item names
 - For every announced corporation, a character of that corporation with:
-  - an ESI token with the scope `esi-wallet.read_corporation_wallets.v1`, for
-    example the one created when adding the corporation to Corp Tools
-  - the in-game role Accountant or Junior Accountant
+  - an ESI token with the scopes `esi-wallet.read_corporation_wallets.v1`
+    and `esi-characters.read_corporation_roles.v1`, for example the one
+    created when adding the corporation to Corp Tools
+  - one of the in-game roles CEO, Director, Accountant or Junior Accountant.
+    The app tries the tokens of the corporation in turn and takes the first
+    whose character holds one, the way Corp Tools chooses its own
 
 ## Installation<a name="installation"></a>
 
@@ -107,9 +110,9 @@ Open **Discord Announcer** in the sidebar. Every row is one announcement:
 | ------------------ | --------------------------------------------------------------------------------------------- |
 | Name               | Label to tell the rows apart                                                                  |
 | Corporation        | Corporation whose wallet is read. Type to search, then pick one of the suggestions            |
-| Wallet Division    | Wallet division to read, 1 to 7                                                               |
-| Discord Channel ID | Channel to post to. In Discord, enable Developer Mode, then right-click the channel → "Copy Channel ID" |
-| Interval (hours)   | How often the row posts, and at the same time the span each post covers. At least 1          |
+| Wallet division    | Wallet division to read, 1 to 7                                                               |
+| Discord channel ID | Channel to post to. In Discord, enable Developer Mode, then right-click the channel → "Copy Channel ID" |
+| Interval (hours)   | How often the row posts; each post covers the sales since its previous run. At least 1       |
 | Active             | Switched off rows are skipped                                                                 |
 
 The last row of the table is always empty and adds a new announcement when
@@ -129,30 +132,37 @@ Two buttons below the table work on the saved rows, so save changes first:
 
 On every run of the periodic task, each active row is handled like this:
 
-1. If its interval has not passed since its last run, nothing happens.
-2. Otherwise, the sales since its last run are read from ESI. On the first run
-   after the row was created or switched back on, the sales of the last interval
-   are read instead.
+1. If its interval has not passed since its last attempt, nothing happens. A
+   row counts as due one minute early, so the periodic task's own latency does
+   not push it to the next tick.
+2. Otherwise, the transactions after the newest one the previous run saw are
+   read from ESI. On the first run after the row was created or switched back
+   on, the sales of the last interval are read instead.
 3. If there were sales, one message per station is posted. Its title names the
-   hours actually covered, which can be a little longer than the interval when
-   the periodic task ran late.
-4. The row's last run moves to now, also when there were no sales.
+   hours since the last run, which can be a little longer than the interval
+   when the periodic task ran late.
+4. The row's last run moves to now, and its watermark to the newest
+   transaction ESI returned - also when there were no sales.
+
+The window follows the transactions, not the clock, because ESI hands them
+out from a cache of up to an hour: a sale made shortly before a run shows up
+in a later answer, dated before that run, and is posted with the next one.
 
 If nothing could be sent because AA-Discordbot is missing, or reading the sales
-failed, the last run stays where it was, and the sales are posted with the next
-run that succeeds.
+failed, the window stays where it was, and the sales are posted with the next
+run that succeeds. A failing row is tried again one interval later, not on
+every run of the periodic task, and logged as a warning.
 
-Sales at stations or of item types that Corp Tools does not know yet are left
-out of the message.
+Sales at stations or of item types that Corp Tools does not know yet are
+posted with their id, as "Location 60003760" or "Type 34".
 
 ## Settings<a name="settings"></a>
 
 Optional, in `settings/local.py`:
 
-| Name             | Default                                    | Description                               |
-| ---------------- | ------------------------------------------ | ----------------------------------------- |
-| `TIME_DELTA`     | `12`                                       | Interval in hours preset for new rows     |
-| `REQUIRED_SCOPE` | `"esi-wallet.read_corporation_wallets.v1"` | Scope a token needs to be used by the app |
+| Name         | Default | Description                           |
+| ------------ | ------- | ------------------------------------- |
+| `TIME_DELTA` | `12`    | Interval in hours preset for new rows |
 
 ## Upgrading From 0.0.17 or Earlier<a name="upgrading-from-0017-or-earlier"></a>
 
@@ -176,3 +186,10 @@ pip install -e discord_announcer
 
 Then add it to `INSTALLED_APPS` of your dev AA, run `python manage.py check` and
 `python manage.py migrate`, and restart the server.
+
+The tests run from the AA instance (`python manage.py test discord_announcer`)
+or on their own, from this repository, against the bundled test project:
+
+```bash
+python runtests.py discord_announcer
+```

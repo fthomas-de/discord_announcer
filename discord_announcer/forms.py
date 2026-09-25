@@ -74,19 +74,6 @@ class AnnouncerConfigForm(forms.ModelForm):
         # row counts as changed and blocks saving. The default is stable, so off.
         self.fields["time_delta"].show_hidden_initial = False
 
-        self.fields["channel_id"].help_text = _(
-            "Enable Developer Mode in Discord, then right-click the channel "
-            '→ "Copy Channel ID".'
-        )
-
-    def save(self, commit=True):
-        # A reactivated row starts a fresh window, instead of posting
-        # everything sold while it was switched off.
-        if "is_active" in self.changed_data and self.instance.is_active:
-            self.instance.last_run_at = None
-
-        return super().save(commit=commit)
-
 
 AnnouncerConfigFormSet = forms.modelformset_factory(
     AnnouncerConfig,

@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 # Alliance Auth
@@ -30,12 +30,8 @@ logger = get_extension_logger(__name__)
 @login_required
 @permission_required("discord_announcer.basic_access")
 def index(request: WSGIRequest) -> HttpResponse:
-    """
-    Manage the announcer configurations (corporation, division, channel,
-    interval) that the scheduled task reads.
-    :param request:
-    :return:
-    """
+    """Manage the announcer configurations (corporation, division, channel,
+    interval) that the scheduled task reads."""
 
     queryset = AnnouncerConfig.objects.select_related("corporation")
 
@@ -70,7 +66,7 @@ def _describe_failure(config: AnnouncerConfig, token, error: Exception) -> str:
     if isinstance(error, HTTPClientError) and error.status_code == 403:
         return _(
             "%(name)s: ESI refused the token of %(character)s. The character needs "
-            "the in-game role Accountant or Junior Accountant."
+            "one of the in-game roles CEO, Director, Accountant or Junior Accountant."
         ) % names
 
     if isinstance(error, TokenError):
@@ -89,7 +85,9 @@ def _describe_failure(config: AnnouncerConfig, token, error: Exception) -> str:
 
 def _missing_token(config: AnnouncerConfig) -> str:
     return _(
-        "%(name)s: no character of %(corporation)s has a token with the wallet scope."
+        "%(name)s: no character of %(corporation)s has a token with the wallet and "
+        "roles scopes and one of the in-game roles CEO, Director, Accountant or "
+        "Junior Accountant."
     ) % {"name": config.name, "corporation": config.corporation.corporation_name}
 
 
@@ -162,20 +160,11 @@ def send_latest(request: WSGIRequest) -> HttpResponse:
             continue
 
         sold_at = f"{sale.date:%Y-%m-%d %H:%M} EVE"
-        formatted = format_sales([sale])
 
-        if not formatted:
-            messages.warning(
-                request,
-                _(
-                    "%(name)s: the latest sale (%(sold_at)s) is at a station or of an item "
-                    "type Corp Tools does not know yet, so there is nothing to post."
-                ) % {"name": config.name, "sold_at": sold_at},
-            )
-            continue
-
+        # a station or type Corp Tools does not know is posted by its id, so
+        # there is always something to post
         send_message_to_discord(
-            messages=formatted,
+            messages=format_sales([sale]),
             channel_id=config.channel_id,
             title=f"Latest sale, {sold_at}",
             source=describe_source(config),

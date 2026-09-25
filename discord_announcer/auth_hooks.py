@@ -19,7 +19,7 @@ class DAMenuItem(MenuItemHook):
         MenuItemHook.__init__(
             self,
             _("Discord Announcer"),
-            "fas fa-bullhorn fa-fw",
+            "fa-solid fa-bullhorn fa-fw",
             "discord_announcer:index",
             navactive=["discord_announcer:"],
         )
@@ -45,7 +45,3 @@ def register_urls():
     """Register app urls"""
 
     return UrlHook(urls, "discord_announcer", r"^discord_announcer/")
-
-#@hooks.register('discord_cogs_hook')
-#def register_cogs():
-#    return ["discord_announcer.cogs.cog_a", "discord_announcer.cogs.cog_b"]

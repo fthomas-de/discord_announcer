@@ -1,4 +1,5 @@
 appname = discord_announcer
+appname_verbose = Discord Announcer
 package = discord_announcer
 
 # Default goal
@@ -42,7 +43,8 @@ translations:
 		-l uk \
 		-l zh_Hans \
 		--keep-pot \
-		--ignore 'build/*'
+		--ignore 'build/*' \
+		--ignore 'testauth/*'
 
 # Compile translation files
 .PHONY: compile_translations
@@ -97,8 +99,7 @@ build_test:
 .PHONY: tox_tests
 tox_tests:
 	@echo "Running tests with tox"
-	@export USE_MYSQL=False; \
-	tox -v -e allianceauth-latest; \
+	@tox -v; \
 	rm -rf .tox/
 
 # Pre-commit checks

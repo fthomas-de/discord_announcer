@@ -11,18 +11,17 @@
 
         <div class="card-body">
             <p class="text-body-secondary small">
-                {% blocktranslate %}One row per corporation/channel combination the scheduled task
-                should announce sales for. Each row posts every interval, covering the sales since its
-                previous post, with at least one hour between two posts.{% endblocktranslate %}
+                {% blocktranslate trimmed %}One row per corporation, wallet division and channel the
+                scheduled task should announce sales for. Each row posts once per interval, covering
+                the sales since its previous run, with at least one hour between two posts.{% endblocktranslate %}
             </p>
 
             <form role="form" action="" method="POST">
                 {% csrf_token %}
                 {{ formset.management_form }}
 
-                {% if formset.non_form_errors %}
-                    <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
-                {% endif %}
+                {# django-bootstrap5 renders the alert itself, and nothing when there is none #}
+                {% bootstrap_formset_errors formset %}
 
                 <div class="table-responsive">
                     <table class="table table-sm align-top">
@@ -46,7 +45,7 @@
                                 <tr>
                                     {% if config_form.non_field_errors %}
                                         <td colspan="7">
-                                            <div class="alert alert-danger mb-0">{{ config_form.non_field_errors }}</div>
+                                            {% bootstrap_form_errors config_form type="non_fields" %}
                                         </td>
                                     </tr>
                                     <tr>
@@ -86,7 +85,7 @@
                 </div>
 
                 <p class="text-body-secondary small mt-2 mb-0">
-                    {% blocktranslate %}"Check tokens" reads the wallet of every saved row once, the way the
+                    {% blocktranslate trimmed %}"Check tokens" reads the wallet of every saved row once, the way the
                     scheduled task does, without posting. "Post latest sale" posts the newest sale of every
                     active row once, however old, and leaves the regular rhythm untouched. Both work on the
                     saved rows, so save changes first.{% endblocktranslate %}

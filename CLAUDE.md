@@ -93,11 +93,32 @@ language must not depend on who clicked a button.
 
 ## Tests
 
-There is no test suite in the repo yet. So far every change was checked with
-scratch scripts run through `manage.py shell`, with ESI, Discord and
-`Model.save` mocked; `docs/HANDOVER.md` lists the scenarios. py-cord and
-AA-Discordbot are not installed in the dev venv - stand in `discord` and
-`aadiscordbot.tasks` modules through `sys.modules` to test sending.
+The suite lives in `discord_announcer/tests/`, run from the AA instance:
+
+```bash
+~/bin/eos-test discord_announcer
+```
+
+or on its own against the bundled sqlite test project:
+
+```bash
+~/aa-dev/venv/bin/python runtests.py discord_announcer
+```
+
+Nothing in it talks to ESI or Discord. `tests/base.py` has the fixtures: a
+wallet transaction is a `SimpleNamespace` with the attributes the django-esi 9
+client returns (`make_sale`), and `fake_discord()` stands in `discord` and
+`aadiscordbot.tasks` through `sys.modules`, collecting every embed. ESI is
+replaced at `selects.get_transactions`, so the watermark, paging and filters
+above it run for real. Alliance Auth names extension loggers
+`extensions.<module>`, which is what `assertLogs` needs.
+
+Every change gets a test, and every new test gets checked against the broken
+code: put the fault back, run the test, confirm it fails, restore the file
+and compare its checksum.
+
+`tests/` code belongs inside a `TestCase` only - `manage.py shell` writes
+straight into `aa_dev`.
 
 ## Shell
 

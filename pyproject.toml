@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "discord_announcer"
-description = "DA Plugin for Alliance Auth (GitHub Version)"
+description = "Posts the market sales of corporation wallet divisions to Discord, for Alliance Auth"
 readme = "README.md"
 keywords = [
     "allianceauth",
@@ -14,13 +14,13 @@ keywords = [
 ]
 license = { file = "LICENSE" }
 authors = [
-    { name = "Peter Pfeufer", email = "develop@ppfeufer.de" },
+    { name = "fthomas-de" },
 ]
 requires-python = ">=3.10"
 classifiers = [
     "Environment :: Web Environment",
     "Framework :: Django",
-    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.2",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
@@ -36,11 +36,18 @@ classifiers = [
 dynamic = [
     "version",
 ]
+# AA 5 for esi.openapi_clients, corptools because the app imports it on
+# start: without it pip installed fine and Alliance Auth then failed to boot
 dependencies = [
-    "allianceauth>=4.3.1,<6",
+    "allianceauth>=5,<6",
+    "allianceauth-corptools",
 ]
-urls.Changelog = "https://github.com/ppfeufer/aa-example-plugin/blob/master/CHANGELOG.md"
-urls."Issue / Bug Reports" = "https://github.com/ppfeufer/aa-example-plugin/issues"
+# nothing is posted without the bot, but the page works and says so
+optional-dependencies.discordbot = [
+    "allianceauth-discordbot",
+]
+urls.Changelog = "https://github.com/fthomas-de/discord_announcer/blob/master/CHANGELOG.md"
+urls."Issue / Bug Reports" = "https://github.com/fthomas-de/discord_announcer/issues"
 
 [tool.hatch.version]
 path = "discord_announcer/__init__.py"

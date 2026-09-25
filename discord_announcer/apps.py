@@ -3,7 +3,7 @@
 # Django
 from django.apps import AppConfig
 
-# AA Example App
+# Discord Announcer
 from discord_announcer import __version__
 
 

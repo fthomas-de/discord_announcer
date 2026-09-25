@@ -13,10 +13,6 @@ def send_message_to_discord(
     messages: list, channel_id: int, title: str, source: tuple[str, str] | None = None
 ) -> bool:
     """Queue one embed per (station, text) pair, with source as (author line, icon url); False if impossible."""
-    if channel_id is None:
-        print("No channel ID provided")
-        return False
-
     if not discord_bot_active():
         logger.error("[discord_announcer] AADiscordBot not installed, cannot send message to discord")
         return False

@@ -3,7 +3,7 @@
 # Django
 from django.urls import path
 
-# AA Example App
+# Discord Announcer
 from discord_announcer import views
 
 app_name: str = "discord_announcer"
