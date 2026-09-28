@@ -4,14 +4,17 @@ Where the work stands and what is still open. `CLAUDE.md` holds the durable
 rules for working on this app; this file holds the moment, and goes stale on
 purpose - if a statement here contradicts the code, the code is right.
 
-Last updated 2026-09-25.
+Last updated 2026-09-28.
 
 ## Release
 
-- Version **0.0.22** in `discord_announcer/__init__.py`, **not committed** -
-  the review of 2026-09-25 sits in the working tree, under `[0.0.22]` in
-  `CHANGELOG.md`. `51aedef` (0.0.21) is still the last commit
-- `CHANGELOG.md`: `[0.0.18]`-`[0.0.21]` split at the commits that raised the
+- Version **0.0.23** in `discord_announcer/__init__.py`, released - `[0.0.23]`
+  in `CHANGELOG.md` holds the license switch from GPLv3 to MIT (`LICENSE`,
+  the `pyproject.toml` classifier, the README badge), to match eos-tax and
+  eos-invoices
+- `[0.0.22]` (the 2026-09-25 review) is committed too, along with further
+  session/tooling commits since - `4edc7c3` is the current head, not `51aedef`
+- `CHANGELOG.md`: `[0.0.18]`-`[0.0.22]` split at the commits that raised the
   version; 0.0.1-0.0.9 were the example plugin and are one line now;
   0.0.10-0.0.17 were never written down
 - Dev: migrations **0001-0006** applied to `aa_dev`, including **0006**

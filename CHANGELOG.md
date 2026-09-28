@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [In Development] - Unreleased
 
+## [0.0.23] - 2026-09-28
+
 ### Changed
 
 - License switched from GPLv3 to MIT, to match the other apps
