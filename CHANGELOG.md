@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [In Development] - Unreleased
+
+### Changed
+
+- License switched from GPLv3 to MIT, to match the other apps
+  (`LICENSE`, the `pyproject.toml` classifier and the README badge).
+
 ## [0.0.22] - 2026-09-25
 
 > [!NOTE]

@@ -4,7 +4,7 @@ A plugin for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA) 
 posts the market sales of corporation wallet divisions to Discord channels, at a
 fixed interval per configuration.
 
-![License](https://img.shields.io/badge/license-GPLv3-green)
+![License](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10+-informational)
 ![allianceauth](https://img.shields.io/badge/allianceauth-5.x-informational)
 
