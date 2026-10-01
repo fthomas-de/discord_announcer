@@ -48,7 +48,7 @@ app. Commands run from `~/aa-dev/working/myauth`.
 - Version file: `discord_announcer/__init__.py`
 - Changelog section: `[In Development] - Unreleased`
 - Tests while working: `~/bin/eos-test discord_announcer.tests.<module>`
-- Suite without translation tests: `~/bin/eos-test discord_announcer --exclude-tag translations`
+- Suite without translation tests: `~/bin/eos-test discord_announcer --fresh --exclude-tag translations`
 - Checks: `~/aa-dev/venv/bin/python manage.py makemigrations discord_announcer --check --dry-run`
 - Translations: none yet (`discord_announcer/locale/` is empty)
 - Translation tests: none yet
