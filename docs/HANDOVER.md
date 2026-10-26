@@ -8,25 +8,26 @@ Last updated 2026-10-26.
 
 ## Release
 
-- Version **0.0.24** in `discord_announcer/__init__.py`, released -
-  `[0.0.24]` in `CHANGELOG.md` holds the fix of a security review finding:
-  `basic_access` used to let every holder change and delete all
-  configurations, pick any corporation (posting another corp's sales into a
-  channel they can read) and click both buttons without limit
+- Version **0.0.25** in `discord_announcer/__init__.py`, released
+  2026-10-26 - `[0.0.25]` in `CHANGELOG.md`: a row can post the purchases
+  of its division instead of the sales (migration `0008`), the button is
+  "Post latest transaction" now
+- `[0.0.24]` was the fix of a security review finding: `basic_access` used
+  to let every holder change everything; now `manage_configs` is needed
 - `CHANGELOG.md`: `[0.0.18]`-`[0.0.22]` split at the commits that raised the
   version; 0.0.1-0.0.9 were the example plugin and are one line now;
   0.0.10-0.0.17 were never written down
-- Dev: migrations **0001-0007** applied to `aa_dev`; 0007 runs no SQL, it
-  only adds the `manage_configs` permission row. One configuration row
-  saved, Alliance Auth 5.3.1, django-esi 9.10.0
-- In development, not committed: **sales or purchases per row**
-  (`transaction_kind`, migration **0008**, not yet applied to `aa_dev`) -
-  see below
+- Dev: migrations **0001-0007** applied to `aa_dev`; **0008 is not** - the
+  user has not said yes to it yet (per `CLAUDE.md`, ask per migration). It
+  only adds the column `transaction_kind` with default `sales`. Until it is
+  applied, the dev page and the task fail on the missing column; restart
+  the Celery worker after applying. One configuration row saved, Alliance
+  Auth 5.3.1, django-esi 9.10.0
 - 82 tests green (`discord_announcer/tests/`), each fix checked against the
   broken code
 - `manage.py check` and `makemigrations --check` clean
 
-## Sales or purchases (in development)
+## Sales or purchases (0.0.25)
 
 Asked for and decided by the user on 2026-10-26: each row posts either the
 sales or the purchases of its division (`AnnouncerConfig.transaction_kind`,
@@ -43,6 +44,11 @@ follows the row and is called "Post latest transaction" now.
   from the translated choice labels.
 - `TestPostLatestPurchase` runs every button test of `TestPostLatestSale`
   again for a purchases row, through class attributes.
+- Not seen end to end: no purchases row has posted to a real Discord yet.
+- Trap from this session: a leftover `.git/CLAUDE_COMMIT_MSG` from an
+  earlier release made the Write tool refuse ("not read yet"), and the
+  commit went out with the old message. Check that the file is gone before
+  writing a new one.
 
 ## Permissions (0.0.24)
 
@@ -56,7 +62,7 @@ permission, restricting to the user's own corporations, superusers only):
 - `manage_configs` - together with `basic_access`: saving, removing, both
   buttons. No restriction by corporation, on purpose.
 - Both buttons have a 60 second cooldown per user and button
-  (`views.BUTTON_COOLDOWN`, `cache.add`). On "Post latest sale" the
+  (`views.BUTTON_COOLDOWN`, `cache.add`). On "Post latest transaction" the
   cooldown starts only once the bot is found to be installed.
 - The raw exception text stays in the "reading the wallet failed" message -
   the user chose to keep it.
@@ -101,7 +107,7 @@ installing 5.3 again, not by touching the table. If it ever comes back, compare
 ## Open
 
 1. **Live system** - not seen by me. To bring it up: deploy the new version
-   with migrations 0003-0007, `migrate discord_announcer`, delete the old
+   with migrations 0003-0008, `migrate discord_announcer`, delete the old
    periodic tasks with arguments, add the single `CELERYBEAT_SCHEDULE` entry
    from the README, restart AA and the Celery workers. Tokens need the roles
    scope `esi-characters.read_corporation_roles.v1` now. Grant

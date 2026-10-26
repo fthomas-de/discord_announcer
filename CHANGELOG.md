@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [In Development] - Unreleased
 
+## [0.0.25] - 2026-10-26
+
 ### Added
 
 - A configuration can post the purchases of its wallet division instead of
