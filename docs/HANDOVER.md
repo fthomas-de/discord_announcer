@@ -4,26 +4,44 @@ Where the work stands and what is still open. `CLAUDE.md` holds the durable
 rules for working on this app; this file holds the moment, and goes stale on
 purpose - if a statement here contradicts the code, the code is right.
 
-Last updated 2026-09-28.
+Last updated 2026-10-26.
 
 ## Release
 
-- Version **0.0.23** in `discord_announcer/__init__.py`, released - `[0.0.23]`
-  in `CHANGELOG.md` holds the license switch from GPLv3 to MIT (`LICENSE`,
-  the `pyproject.toml` classifier, the README badge), to match eos-tax and
-  eos-invoices
-- `[0.0.22]` (the 2026-09-25 review) is committed too, along with further
-  session/tooling commits since - `4edc7c3` is the current head, not `51aedef`
+- Version **0.0.24** in `discord_announcer/__init__.py`, released -
+  `[0.0.24]` in `CHANGELOG.md` holds the fix of a security review finding:
+  `basic_access` used to let every holder change and delete all
+  configurations, pick any corporation (posting another corp's sales into a
+  channel they can read) and click both buttons without limit
 - `CHANGELOG.md`: `[0.0.18]`-`[0.0.22]` split at the commits that raised the
   version; 0.0.1-0.0.9 were the example plugin and are one line now;
   0.0.10-0.0.17 were never written down
-- Dev: migrations **0001-0006** applied to `aa_dev`, including **0006**
-  (watermark, last attempt, labels). One configuration row saved, Alliance
-  Auth 5.3.1, django-esi 9.10.0
-- 65 tests green (`discord_announcer/tests/`), each fix checked against the
+- Dev: migrations **0001-0007** applied to `aa_dev`; 0007 runs no SQL, it
+  only adds the `manage_configs` permission row. One configuration row
+  saved, Alliance Auth 5.3.1, django-esi 9.10.0
+- 70 tests green (`discord_announcer/tests/`), each fix checked against the
   broken code
-- `manage.py check` and `makemigrations --check` clean, also with a different
-  `TIME_DELTA`
+- `manage.py check` and `makemigrations --check` clean
+
+## Permissions (0.0.24)
+
+Decided by the user on 2026-10-26, out of three options (a separate
+permission, restricting to the user's own corporations, superusers only):
+
+- `basic_access` - the menu entry and the page, read only: fields disabled,
+  no empty row, no remove boxes, no buttons, no corporation datalist
+  (`AnnouncerConfigReadOnlyFormSet`, `read_only=True`). A POST to the page
+  is a 403.
+- `manage_configs` - together with `basic_access`: saving, removing, both
+  buttons. No restriction by corporation, on purpose.
+- Both buttons have a 60 second cooldown per user and button
+  (`views.BUTTON_COOLDOWN`, `cache.add`). On "Post latest sale" the
+  cooldown starts only once the bot is found to be installed.
+- The raw exception text stays in the "reading the wallet failed" message -
+  the user chose to keep it.
+- The view tests swap the cache for locmem (`ViewTestCase`), so the
+  cooldown never lands in the dev instance's redis; `TestCheckTokens`
+  clears it between subtests.
 
 ## How posting works
 
@@ -62,10 +80,11 @@ installing 5.3 again, not by touching the table. If it ever comes back, compare
 ## Open
 
 1. **Live system** - not seen by me. To bring it up: deploy the new version
-   with migrations 0003-0006, `migrate discord_announcer`, delete the old
+   with migrations 0003-0007, `migrate discord_announcer`, delete the old
    periodic tasks with arguments, add the single `CELERYBEAT_SCHEDULE` entry
    from the README, restart AA and the Celery workers. Tokens need the roles
-   scope `esi-characters.read_corporation_roles.v1` now.
+   scope `esi-characters.read_corporation_roles.v1` now. Grant
+   `manage_configs` to whoever maintains the rows, or they can only look.
 2. **End to end not verified by me.** AA-Discordbot and py-cord are not
    installed in dev; the suite stands them in. "Check tokens" on a system
    with a real token is the first thing to try.

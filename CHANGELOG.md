@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [In Development] - Unreleased
 
+## [0.0.24] - 2026-10-26
+
 > [!IMPORTANT]
 >
 > **`basic_access` no longer lets anyone change anything.** Grant the new
