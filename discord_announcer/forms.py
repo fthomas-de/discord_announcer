@@ -57,6 +57,7 @@ class AnnouncerConfigForm(forms.ModelForm):
             "name",
             "corporation",
             "division",
+            "transaction_kind",
             "channel_id",
             "time_delta",
             "is_active",

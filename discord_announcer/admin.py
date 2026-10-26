@@ -10,5 +10,7 @@ from discord_announcer.models import AnnouncerConfig
 class AnnouncerConfigAdmin(admin.ModelAdmin):
     """Fallback editor for the announcer configurations"""
 
-    list_display = ("name", "corporation", "division", "channel_id", "time_delta", "is_active", "last_run_at")
-    list_filter = ("is_active", "corporation")
+    list_display = (
+        "name", "corporation", "division", "transaction_kind", "channel_id", "time_delta", "is_active", "last_run_at"
+    )
+    list_filter = ("is_active", "transaction_kind", "corporation")

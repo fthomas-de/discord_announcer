@@ -12,8 +12,9 @@
         <div class="card-body">
             <p class="text-body-secondary small">
                 {% blocktranslate trimmed %}One row per corporation, wallet division and channel the
-                scheduled task should announce sales for. Each row posts once per interval, covering
-                the sales since its previous run, with at least one hour between two posts.{% endblocktranslate %}
+                scheduled task should announce sales or purchases for. Each row posts once per interval,
+                covering the transactions since its previous run, with at least one hour between two
+                posts.{% endblocktranslate %}
             </p>
 
             {% if not can_manage %}
@@ -38,6 +39,7 @@
                                     <th scope="col">{{ fields.name.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.name.help_text %}</th>
                                     <th scope="col">{{ fields.corporation.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.corporation.help_text %}</th>
                                     <th scope="col">{{ fields.division.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.division.help_text %}</th>
+                                    <th scope="col">{{ fields.transaction_kind.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.transaction_kind.help_text %}</th>
                                     <th scope="col">{{ fields.channel_id.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.channel_id.help_text %}</th>
                                     <th scope="col">{{ fields.time_delta.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.time_delta.help_text %}</th>
                                     <th scope="col">{{ fields.is_active.label }}</th>
@@ -52,7 +54,7 @@
                             {% for config_form in formset %}
                                 <tr>
                                     {% if config_form.non_field_errors %}
-                                        <td colspan="7">
+                                        <td colspan="8">
                                             {% bootstrap_form_errors config_form type="non_fields" %}
                                         </td>
                                     </tr>
@@ -64,6 +66,7 @@
                                     </td>
                                     <td>{% bootstrap_field config_form.corporation show_label=False show_help=False %}</td>
                                     <td>{% bootstrap_field config_form.division show_label=False show_help=False %}</td>
+                                    <td>{% bootstrap_field config_form.transaction_kind show_label=False show_help=False %}</td>
                                     <td>{% bootstrap_field config_form.channel_id show_label=False show_help=False %}</td>
                                     <td>{% bootstrap_field config_form.time_delta show_label=False show_help=False %}</td>
                                     {# checkboxes are shorter than the inputs, nudge them to the inputs' centre line #}
@@ -91,15 +94,15 @@
                             <i class="fa-solid fa-key fa-fw"></i> {% translate "Check tokens" %}
                         </button>
                         <button type="submit" form="discord-announcer-send-latest" class="btn btn-secondary">
-                            <i class="fa-brands fa-discord fa-fw"></i> {% translate "Post latest sale" %}
+                            <i class="fa-brands fa-discord fa-fw"></i> {% translate "Post latest transaction" %}
                         </button>
                     </div>
 
                     <p class="text-body-secondary small mt-2 mb-0">
                         {% blocktranslate trimmed %}"Check tokens" reads the wallet of every saved row once, the way the
-                        scheduled task does, without posting. "Post latest sale" posts the newest sale of every
-                        active row once, however old, and leaves the regular rhythm untouched. Both work on the
-                        saved rows, so save changes first.{% endblocktranslate %}
+                        scheduled task does, without posting. "Post latest transaction" posts the newest sale or
+                        purchase, as the row says, of every active row once, however old, and leaves the regular
+                        rhythm untouched. Both work on the saved rows, so save changes first.{% endblocktranslate %}
                     </p>
                 {% endif %}
             </form>
@@ -127,7 +130,7 @@
         .forEach((element) => new bootstrap.Tooltip(element));
 
     {% if can_manage %}
-        {% translate "Post the latest sale of every active row to Discord now?" as confirm_text %}
+        {% translate "Post the latest transaction of every active row to Discord now?" as confirm_text %}
         document.getElementById("discord-announcer-send-latest")
             .addEventListener("submit", (event) => {
                 if (!confirm("{{ confirm_text|escapejs }}")) {

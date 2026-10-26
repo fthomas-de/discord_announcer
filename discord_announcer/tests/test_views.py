@@ -94,6 +94,7 @@ class TestTheForm(ViewTestCase):
             "name": "Market",
             "corporation": CORP_NAME,
             "division": "1",
+            "transaction_kind": "sales",
             "channel_id": "1234567890",
             "time_delta": "2",
             "is_active": "on",
@@ -115,6 +116,12 @@ class TestTheForm(ViewTestCase):
         self.assertEqual(response.status_code, 302)
         self.assertEqual(AnnouncerConfig.objects.get().corporation, self.corporation)
 
+    def test_should_save_a_row_for_purchases(self):
+        response = self.client.post(reverse(INDEX), formset_data([self.row(transaction_kind="purchases")]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(AnnouncerConfig.objects.get().posts_purchases)
+
     def test_should_reject_an_unknown_corporation(self):
         response = self.client.post(reverse(INDEX), formset_data([self.row(corporation="Nobody Corp")]))
 
@@ -128,8 +135,8 @@ class TestTheForm(ViewTestCase):
         existing = self.row(id=str(config.pk), name="Renamed")
         # what the browser sends for the last row as rendered: its defaults
         empty = {
-            "name": "", "corporation": "", "division": "1", "channel_id": "",
-            "time_delta": str(default_interval()), "is_active": "on",
+            "name": "", "corporation": "", "division": "1", "transaction_kind": "sales",
+            "channel_id": "", "time_delta": str(default_interval()), "is_active": "on",
         }
 
         response = self.client.post(reverse(INDEX), formset_data([existing, empty], initial=1))
@@ -138,7 +145,10 @@ class TestTheForm(ViewTestCase):
         self.assertEqual(AnnouncerConfig.objects.get().name, "Renamed")
 
     def test_should_report_a_half_filled_row(self):
-        half = {"name": "Half", "corporation": "", "division": "1", "channel_id": "", "time_delta": "1"}
+        half = {
+            "name": "Half", "corporation": "", "division": "1", "transaction_kind": "sales",
+            "channel_id": "", "time_delta": "1",
+        }
 
         response = self.client.post(reverse(INDEX), formset_data([half]))
 
@@ -159,7 +169,7 @@ class TestTheForm(ViewTestCase):
 
     def test_should_ask_before_posting(self):
         self.assertContains(
-            self.client.get(reverse(INDEX)), "Post the latest sale of every active row to Discord now?"
+            self.client.get(reverse(INDEX)), "Post the latest transaction of every active row to Discord now?"
         )
 
 
@@ -177,14 +187,14 @@ class TestLookingOnly(ViewTestCase):
         self.assertContains(response, f'value="{CORP_NAME}"')
         self.assertContains(response, "disabled")
         self.assertEqual(response.context["formset"].total_form_count(), 1)  # no empty row
-        for absent in ("Save", "Check tokens", "Post latest sale", "<datalist", "DELETE"):
+        for absent in ("Save", "Check tokens", "Post latest transaction", "<datalist", "DELETE"):
             with self.subTest(absent=absent):
                 self.assertNotContains(response, absent)
 
     def test_should_refuse_a_change(self):
         row = {
             "id": str(self.config.pk), "name": "Renamed", "corporation": CORP_NAME, "division": "1",
-            "channel_id": "1", "time_delta": "1", "is_active": "on", "DELETE": "on",
+            "transaction_kind": "sales", "channel_id": "1", "time_delta": "1", "is_active": "on", "DELETE": "on",
         }
 
         response = self.client.post(reverse(INDEX), formset_data([row], initial=1))
@@ -218,7 +228,7 @@ class TestCooldown(ViewTestCase):
         self.assertEqual(esi.call_count, 2)
 
         patcher, sent = fake_discord()
-        with patcher, mock.patch("discord_announcer.views.discord_bot_active", return_value=True),                 mock.patch("discord_announcer.views.get_latest_sale", return_value=None) as latest:
+        with patcher, mock.patch("discord_announcer.views.discord_bot_active", return_value=True),                 mock.patch("discord_announcer.views.get_latest_transaction", return_value=None) as latest:
             self.client.post(reverse("discord_announcer:send_latest"))
 
         latest.assert_called_once()
@@ -268,10 +278,15 @@ class TestCheckTokens(ViewTestCase):
 
 @mock.patch("discord_announcer.views.get_corp_transaction_token", return_value=TOKEN)
 class TestPostLatestSale(ViewTestCase):
+    # what the row posts; TestPostLatestPurchase runs the same tests for purchases
+    kind = AnnouncerConfig.TransactionKind.SALES
+    is_buy = False
+    singular, plural = "sale", "sales"
+
     def setUp(self):
         super().setUp()
         make_names()
-        self.config = make_config(corporation=self.corporation)
+        self.config = make_config(corporation=self.corporation, transaction_kind=self.kind)
         patcher, self.sent = fake_discord()
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -279,7 +294,7 @@ class TestPostLatestSale(ViewTestCase):
     def post(self, bot=True, sales=()):
         with mock.patch("discord_announcer.views.discord_bot_active", return_value=bot), \
                 mock.patch("discord_announcer.discord_bot.discord_bot_active", return_value=bot), \
-                mock.patch("discord_announcer.views.get_latest_sale", return_value=sales[0] if sales else None) as latest:
+                mock.patch("discord_announcer.views.get_latest_transaction", return_value=sales[0] if sales else None) as latest:
             response = self.client.post(reverse("discord_announcer:send_latest"))
 
         return response, latest
@@ -290,27 +305,38 @@ class TestPostLatestSale(ViewTestCase):
         self.assertEqual(texts(response), ["AA-Discordbot is not installed, nothing can be posted."])
         latest.assert_not_called()
 
-    def test_should_warn_when_esi_has_no_sale(self, token):
+    def test_should_ask_esi_for_what_the_row_posts(self, token):
+        _, latest = self.post()
+
+        self.assertIs(latest.call_args.args[2], self.is_buy)
+
+    def test_should_warn_when_esi_has_none(self, token):
         response, _ = self.post()
 
-        self.assertEqual(texts(response), ["Market: ESI returned no sales for this wallet division."])
+        self.assertEqual(texts(response), [f"Market: ESI returned no {self.plural} for this wallet division."])
         self.assertEqual(self.sent.call_count, 0)
 
-    def test_should_post_the_sale_with_its_date_and_leave_the_rhythm_alone(self, token):
-        sale = make_sale(minutes_ago=0)
+    def test_should_post_it_with_its_date_and_leave_the_rhythm_alone(self, token):
+        transaction = make_sale(minutes_ago=0, is_buy=self.is_buy)
 
-        response, _ = self.post(sales=[sale])
+        response, _ = self.post(sales=[transaction])
 
         self.assertEqual(
             [embed.title for embed in embeds(self.sent)],
-            [f"Latest sale, {NOW:%Y-%m-%d %H:%M} EVE: Jita IV - Moon 4 - Caldari Navy Assembly Plant"],
+            [f"Latest {self.singular}, {NOW:%Y-%m-%d %H:%M} EVE: Jita IV - Moon 4 - Caldari Navy Assembly Plant"],
         )
         self.config.refresh_from_db()
         self.assertIsNone(self.config.last_run_at)
-        self.assertTrue(texts(response)[0].startswith("Market: posted the latest sale"))
+        self.assertTrue(texts(response)[0].startswith(f"Market: posted the latest {self.singular}"))
 
-    def test_should_post_a_sale_at_a_station_corptools_does_not_know(self, token):
+    def test_should_post_it_at_a_station_corptools_does_not_know(self, token):
         """It used to warn and post nothing."""
-        self.post(sales=[make_sale(location_id=1_234_567_890_123)])
+        self.post(sales=[make_sale(location_id=1_234_567_890_123, is_buy=self.is_buy)])
 
         self.assertTrue(embeds(self.sent)[0].title.endswith(": Location 1234567890123"))
+
+
+class TestPostLatestPurchase(TestPostLatestSale):
+    kind = AnnouncerConfig.TransactionKind.PURCHASES
+    is_buy = True
+    singular, plural = "purchase", "purchases"

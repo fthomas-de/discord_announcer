@@ -1,5 +1,5 @@
-"""The periodic task: which rows are due, which sales a window holds, and
-where the next window starts.
+"""The periodic task: which rows are due, which sales or purchases a window
+holds, and where the next window starts.
 
 ESI is replaced at selects.get_transactions, so everything from there up -
 the watermark, the paging, the filters - runs for real.
@@ -222,6 +222,49 @@ class TestWhatAWindowPosts(AnnounceTestCase):
         self.assertIsNone(self.config.last_transaction_id)
         # but it was tried, and waits its interval before the next attempt
         self.assertEqual(self.config.last_attempt_at, NOW)
+
+
+class TestAPurchasesRow(AnnounceTestCase):
+    """A row set to purchases posts what was bought and moves past what was sold."""
+
+    def setUp(self):
+        super().setUp()
+        self.config.transaction_kind = AnnouncerConfig.TransactionKind.PURCHASES
+        self.config.save()
+
+    def test_should_post_the_purchases_of_its_first_window(self):
+        bought = make_sale(minutes_ago=30, is_buy=True, quantity=7)
+        sold = make_sale(minutes_ago=10, quantity=3)
+        self.answer = [bought, sold]
+
+        self.run_at()
+
+        self.assertTrue(self.titles()[0].startswith("Purchases (last 1 hour): "))
+        self.assertIn("Tritanium x 7", embeds(self.sent)[0].description)
+        self.assertNotIn("x 3", embeds(self.sent)[0].description)
+        self.assertEqual(self.config.last_transaction_id, sold.transaction_id)
+
+    def test_should_post_the_purchases_after_the_watermark(self):
+        seen = make_sale(minutes_ago=120, is_buy=True)
+        self.config.last_run_at = NOW - timedelta(hours=1)
+        self.config.last_transaction_id = seen.transaction_id
+        self.config.save()
+        bought = make_sale(minutes_ago=20, is_buy=True, quantity=4)
+        self.answer = [seen, bought, make_sale(minutes_ago=5)]
+
+        self.run_at()
+
+        self.assertEqual(len(self.titles()), 1)
+        self.assertIn("Tritanium x 4", embeds(self.sent)[0].description)
+
+    def test_should_move_past_sales_without_posting_them(self):
+        sold = make_sale(minutes_ago=5)
+        self.answer = [sold]
+
+        self.run_at()
+
+        self.assertEqual(self.titles(), [])
+        self.assertEqual(self.config.last_transaction_id, sold.transaction_id)
 
 
 class TestAFailingRow(AnnounceTestCase):

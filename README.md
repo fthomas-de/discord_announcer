@@ -1,8 +1,8 @@
 # Discord Announcer<a name="discord-announcer"></a>
 
 A plugin for [Alliance Auth](https://gitlab.com/allianceauth/allianceauth) (AA) that
-posts the market sales of corporation wallet divisions to Discord channels, at a
-fixed interval per configuration.
+posts the market sales or purchases of corporation wallet divisions to Discord
+channels, at a fixed interval per configuration.
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.10+-informational)
@@ -30,18 +30,18 @@ ______________________________________________________________________
 ## Features<a name="features"></a>
 
 - Own entry in the AA sidebar, leading to a page where any number of
-  announcements are maintained: corporation, wallet division, Discord channel
-  and interval
-- One Discord embed per station, listing every item type sold with quantity and
-  total ISK, headed by the corporation (with logo) and wallet division it comes
-  from
-- Every sale is posted exactly once: each post covers the sales since the
-  previous post of the same configuration
+  announcements are maintained: corporation, wallet division, sales or
+  purchases, Discord channel and interval
+- One Discord embed per station, listing every item type sold (or bought) with
+  quantity and total ISK, headed by the corporation (with logo) and wallet
+  division it comes from
+- Every sale or purchase is posted exactly once: each post covers the
+  transactions since the previous post of the same configuration
 - At most one post per hour and configuration
 - A broken configuration (missing token, ESI error) is logged and does not stop
   the others
 - Buttons to check the tokens of all configurations and to post the latest sale
-  of each one on demand
+  or purchase of each one on demand
 
 ## Requirements<a name="requirements"></a>
 
@@ -101,7 +101,7 @@ python manage.py collectstatic --noinput
 | `discord_announcer.manage_configs` | Changing and removing every configuration, and the two buttons on the page    |
 
 `manage_configs` works together with `basic_access`. Whoever holds it can post
-the sales of any corporation that has a wallet token into any channel the bot
+the sales and purchases of any corporation that has a wallet token into any channel the bot
 can reach, so grant it only to the people maintaining the announcements. Each
 button can be used once a minute per user.
 
@@ -114,8 +114,9 @@ Open **Discord Announcer** in the sidebar. Every row is one announcement:
 | Name               | Label to tell the rows apart                                                                  |
 | Corporation        | Corporation whose wallet is read. Type to search, then pick one of the suggestions            |
 | Wallet division    | Wallet division to read, 1 to 7                                                               |
+| Posts              | Sales or Purchases of that division. Want both? Add two rows. A change applies from the next post on |
 | Discord channel ID | Channel to post to. In Discord, enable Developer Mode, then right-click the channel → "Copy Channel ID" |
-| Interval (hours)   | How often the row posts; each post covers the sales since its previous run. At least 1       |
+| Interval (hours)   | How often the row posts; each post covers the transactions since its previous run. At least 1 |
 | Active             | Switched off rows are skipped                                                                 |
 
 The last row of the table is always empty and adds a new announcement when
@@ -127,8 +128,9 @@ Two buttons below the table work on the saved rows, so save changes first:
   does, without posting. For each row it reports which character's token is
   used, or what is missing: a token with the wallet scope, the in-game role, or a
   token that can still be refreshed.
-- **Post latest sale** posts the newest sale ESI still returns for every active
-  row, however old, after asking for confirmation. The regular rhythm of the rows
+- **Post latest transaction** posts the newest sale or purchase, as the row
+  says, that ESI still returns for every active row, however old, after asking
+  for confirmation. The regular rhythm of the rows
   is not changed.
 
 ## When a Message Is Posted<a name="when-a-message-is-posted"></a>
@@ -140,23 +142,24 @@ On every run of the periodic task, each active row is handled like this:
    not push it to the next tick.
 2. Otherwise, the transactions after the newest one the previous run saw are
    read from ESI. On the first run after the row was created or switched back
-   on, the sales of the last interval are read instead.
-3. If there were sales, one message per station is posted. Its title names the
+   on, the transactions of the last interval are read instead.
+3. If there were sales (or purchases, for a row set to them), one message per
+   station is posted, titled "Sales" or "Purchases". Its title names the
    hours since the last run, which can be a little longer than the interval
    when the periodic task ran late.
 4. The row's last run moves to now, and its watermark to the newest
-   transaction ESI returned - also when there were no sales.
+   transaction ESI returned, sold or bought - also when nothing was posted.
 
 The window follows the transactions, not the clock, because ESI hands them
 out from a cache of up to an hour: a sale made shortly before a run shows up
 in a later answer, dated before that run, and is posted with the next one.
 
-If nothing could be sent because AA-Discordbot is missing, or reading the sales
-failed, the window stays where it was, and the sales are posted with the next
+If nothing could be sent because AA-Discordbot is missing, or reading the wallet
+failed, the window stays where it was, and the transactions are posted with the next
 run that succeeds. A failing row is tried again one interval later, not on
 every run of the periodic task, and logged as a warning.
 
-Sales at stations or of item types that Corp Tools does not know yet are
+Transactions at stations or of item types that Corp Tools does not know yet are
 posted with their id, as "Location 60003760" or "Type 34".
 
 ## Settings<a name="settings"></a>

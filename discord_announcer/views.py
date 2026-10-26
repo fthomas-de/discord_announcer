@@ -27,8 +27,8 @@ from discord_announcer.forms import (
     AnnouncerConfigReadOnlyFormSet,
 )
 from discord_announcer.models import AnnouncerConfig
-from discord_announcer.selects import get_corp_transaction_token, get_latest_sale, get_transactions
-from discord_announcer.utilities import describe_source, format_sales
+from discord_announcer.selects import get_corp_transaction_token, get_latest_transaction, get_transactions
+from discord_announcer.utilities import describe_source, format_sales, transaction_words
 
 logger = get_extension_logger(__name__)
 
@@ -163,7 +163,8 @@ def check_tokens(request: WSGIRequest) -> HttpResponse:
 @permission_required(["discord_announcer.basic_access", "discord_announcer.manage_configs"])
 @require_POST
 def send_latest(request: WSGIRequest) -> HttpResponse:
-    """Post the newest sale of every active configuration once; the regular rhythm is not touched."""
+    """Post the newest sale or purchase, as the row says, of every active configuration once;
+    the regular rhythm is not touched."""
 
     if not discord_bot_active():
         messages.error(request, _("AA-Discordbot is not installed, nothing can be posted."))
@@ -186,30 +187,38 @@ def send_latest(request: WSGIRequest) -> HttpResponse:
             continue
 
         try:
-            sale = get_latest_sale(config.corporation.corporation_id, config.division, token=token)
+            transaction = get_latest_transaction(
+                config.corporation.corporation_id, config.division, config.posts_purchases, token=token
+            )
         except Exception as error:
             messages.error(request, _describe_failure(config, token, error))
             continue
 
-        if sale is None:
-            messages.warning(
-                request, _("%(name)s: ESI returned no sales for this wallet division.") % {"name": config.name}
-            )
+        if transaction is None:
+            if config.posts_purchases:
+                text = _("%(name)s: ESI returned no purchases for this wallet division.")
+            else:
+                text = _("%(name)s: ESI returned no sales for this wallet division.")
+
+            messages.warning(request, text % {"name": config.name})
             continue
 
-        sold_at = f"{sale.date:%Y-%m-%d %H:%M} EVE"
+        made_at = f"{transaction.date:%Y-%m-%d %H:%M} EVE"
 
         # a station or type Corp Tools does not know is posted by its id, so
         # there is always something to post
         send_message_to_discord(
-            messages=format_sales([sale]),
+            messages=format_sales([transaction]),
             channel_id=config.channel_id,
-            title=f"Latest sale, {sold_at}",
+            title=f"Latest {transaction_words(config)[1]}, {made_at}",
             source=describe_source(config),
         )
-        messages.success(
-            request,
-            _("%(name)s: posted the latest sale (%(sold_at)s).") % {"name": config.name, "sold_at": sold_at},
-        )
+
+        if config.posts_purchases:
+            text = _("%(name)s: posted the latest purchase (%(made_at)s).")
+        else:
+            text = _("%(name)s: posted the latest sale (%(made_at)s).")
+
+        messages.success(request, text % {"name": config.name, "made_at": made_at})
 
     return redirect("discord_announcer:index")

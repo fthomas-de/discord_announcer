@@ -32,11 +32,15 @@ class General(models.Model):
 
 
 class AnnouncerConfig(models.Model):
-    """One sales announcement job: what to look at and where to post it.
+    """One announcement job for a division's sales or purchases: what to look at and where to post it.
 
     Replaces the earlier approach of one manually configured Celery Beat
     periodic task per corporation, division and channel.
     """
+
+    class TransactionKind(models.TextChoices):
+        SALES = "sales", _("Sales")
+        PURCHASES = "purchases", _("Purchases")
 
     name = models.CharField(
         max_length=100,
@@ -55,6 +59,16 @@ class AnnouncerConfig(models.Model):
         verbose_name=_("Wallet division"),
         help_text=_("Corporation wallet division to read (1-7)."),
     )
+    transaction_kind = models.CharField(
+        max_length=10,
+        choices=TransactionKind.choices,
+        default=TransactionKind.SALES,
+        verbose_name=_("Posts"),
+        help_text=_(
+            "Whether this configuration posts the division's sales or its purchases. "
+            "A change applies from the next post on."
+        ),
+    )
     channel_id = models.PositiveBigIntegerField(
         verbose_name=_("Discord channel ID"),
         help_text=_(
@@ -68,7 +82,7 @@ class AnnouncerConfig(models.Model):
         verbose_name=_("Interval (hours)"),
         help_text=_(
             "How often this configuration posts, in hours. Each post covers the "
-            "sales since its previous run. At least one hour."
+            "transactions since its previous run. At least one hour."
         ),
     )
     is_active = models.BooleanField(default=True, verbose_name=_("Active"))
@@ -109,6 +123,11 @@ class AnnouncerConfig(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def posts_purchases(self) -> bool:
+        """What ESI's is_buy must be for a transaction this row posts."""
+        return self.transaction_kind == self.TransactionKind.PURCHASES
 
     def save(self, *args, **kwargs):
         # A reactivated row starts a fresh window instead of posting

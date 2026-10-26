@@ -17,8 +17,8 @@ from esi.exceptions import HTTPClientError
 
 from discord_announcer.discord_bot import send_message_to_discord
 from discord_announcer.models import AnnouncerConfig
-from discord_announcer.selects import get_sales_since, get_transactions_after
-from discord_announcer.utilities import describe_source, format_sales
+from discord_announcer.selects import get_transactions_after, get_transactions_since
+from discord_announcer.utilities import describe_source, format_sales, transaction_words
 
 logger = get_extension_logger(__name__)
 
@@ -78,35 +78,36 @@ def _announce(config: AnnouncerConfig, now: datetime) -> None:
     interval = max(timedelta(hours=config.time_delta), MINIMUM_POST_INTERVAL)
     since = config.last_run_at or now - interval
     corp_id = config.corporation.corporation_id
+    kind = transaction_words(config)[0]
 
     if config.last_transaction_id is None:
         # the first window of a row: by time, and from here on by transaction
-        sales, newest = get_sales_since(since, corp_id, config.division)
+        posted, newest = get_transactions_since(since, corp_id, config.division, config.posts_purchases)
     else:
         transactions = get_transactions_after(corp_id, config.division, config.last_transaction_id)
-        sales = [t for t in transactions if not t.is_buy]
+        posted = [t for t in transactions if t.is_buy == config.posts_purchases]
         newest = max((t.transaction_id for t in transactions), default=None)
 
-    if sales:
+    if posted:
         hours = round((now - since).total_seconds() / 3600)
-        # every sale reaches the message now - an unknown station or type is
-        # posted by its id - so the count is the count of what goes out
+        # every transaction reaches the message now - an unknown station or
+        # type is posted by its id - so the count is the count of what goes out
         logger.info(
-            f"[discord_announcer] Sending {len(sales)} sales for '{config.name}' "
+            f"[discord_announcer] Sending {len(posted)} {kind.lower()} for '{config.name}' "
             f"({_hours_label(hours)}, channel {config.channel_id}, "
             f"corp {corp_id}, division {config.division})"
         )
 
         if not send_message_to_discord(
-            messages=format_sales(sales),
+            messages=format_sales(posted),
             channel_id=config.channel_id,
-            title=f"Sales ({_hours_label(hours)})",
+            title=f"{kind} ({_hours_label(hours)})",
             source=describe_source(config),
         ):
-            # keep the window open, so these sales go out once sending works
+            # keep the window open, so these go out once sending works
             return
     else:
-        logger.info(f"[discord_announcer] No sales for '{config.name}' since {since}")
+        logger.info(f"[discord_announcer] No {kind.lower()} for '{config.name}' since {since}")
 
     config.last_run_at = now
 

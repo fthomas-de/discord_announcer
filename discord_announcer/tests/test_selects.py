@@ -1,4 +1,4 @@
-"""Reading the wallet: which token, which transactions, which sales."""
+"""Reading the wallet: which token, which transactions, which sales or purchases."""
 
 from datetime import timedelta
 from types import SimpleNamespace
@@ -9,9 +9,9 @@ from discord_announcer.selects import (
     WALLET_ROLES,
     WALLET_SCOPE,
     get_corp_transaction_token,
-    get_latest_sale,
-    get_sales_since,
+    get_latest_transaction,
     get_transactions,
+    get_transactions_since,
 )
 
 from .base import CORP_ID, NOW, DiscordAnnouncerTestCase, make_sale
@@ -83,7 +83,7 @@ class TestSales(DiscordAnnouncerTestCase):
         bought = make_sale(minutes_ago=10, is_buy=True)
 
         with mock.patch.object(selects, "get_transactions", return_value=[inside, at_start, bought]):
-            sales, newest = get_sales_since(NOW - timedelta(hours=1), CORP_ID, 1)
+            sales, newest = get_transactions_since(NOW - timedelta(hours=1), CORP_ID, 1, is_buy=False)
 
         # the window start itself belongs to the previous window
         self.assertEqual(sales, [inside])
@@ -91,7 +91,7 @@ class TestSales(DiscordAnnouncerTestCase):
 
     def test_should_report_no_newest_id_for_an_empty_answer(self):
         with mock.patch.object(selects, "get_transactions", return_value=[]):
-            self.assertEqual(get_sales_since(NOW, CORP_ID, 1), ([], None))
+            self.assertEqual(get_transactions_since(NOW, CORP_ID, 1, is_buy=False), ([], None))
 
     def test_should_find_the_newest_sale_and_ignore_purchases(self):
         old = make_sale(minutes_ago=300)
@@ -99,8 +99,30 @@ class TestSales(DiscordAnnouncerTestCase):
         bought = make_sale(minutes_ago=1, is_buy=True)
 
         with mock.patch.object(selects, "get_transactions", return_value=[old, bought, new]):
-            self.assertIs(get_latest_sale(CORP_ID, 1, token=TOKEN), new)
+            self.assertIs(get_latest_transaction(CORP_ID, 1, is_buy=False, token=TOKEN), new)
 
     def test_should_find_no_latest_sale_without_sales(self):
         with mock.patch.object(selects, "get_transactions", return_value=[make_sale(is_buy=True)]):
-            self.assertIsNone(get_latest_sale(CORP_ID, 1, token=TOKEN))
+            self.assertIsNone(get_latest_transaction(CORP_ID, 1, is_buy=False, token=TOKEN))
+
+
+class TestPurchases(DiscordAnnouncerTestCase):
+    def test_should_keep_purchases_after_the_window_start_only(self):
+        bought = make_sale(minutes_ago=30, is_buy=True)
+        bought_before = make_sale(minutes_ago=90, is_buy=True)
+        sold = make_sale(minutes_ago=10)
+
+        with mock.patch.object(selects, "get_transactions", return_value=[bought, bought_before, sold]):
+            purchases, newest = get_transactions_since(NOW - timedelta(hours=1), CORP_ID, 1, is_buy=True)
+
+        self.assertEqual(purchases, [bought])
+        # the next window starts after the newest transaction, sold or bought
+        self.assertEqual(newest, sold.transaction_id)
+
+    def test_should_find_the_newest_purchase_and_ignore_sales(self):
+        old = make_sale(minutes_ago=300, is_buy=True)
+        new = make_sale(minutes_ago=5, is_buy=True)
+        sold = make_sale(minutes_ago=1)
+
+        with mock.patch.object(selects, "get_transactions", return_value=[old, sold, new]):
+            self.assertIs(get_latest_transaction(CORP_ID, 1, is_buy=True, token=TOKEN), new)

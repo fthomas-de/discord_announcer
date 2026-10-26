@@ -19,6 +19,11 @@ def describe_source(config) -> tuple[str, str]:
     return f"{corporation.corporation_name} [{corporation.corporation_ticker}] · {division}", corporation.logo_url_64
 
 
+def transaction_words(config) -> tuple[str, str]:
+    """What a row posts, plural and singular. English: Discord posts are not translated."""
+    return ("Purchases", "purchase") if config.posts_purchases else ("Sales", "sale")
+
+
 def millify(amount) -> str:
     """An ISK amount in the largest unit it reaches, to two decimals.
 

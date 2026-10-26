@@ -93,20 +93,21 @@ def get_division_name(corporation: EveCorporationInfo, division: int) -> str | N
     )
 
 
-def get_latest_sale(corp_id: int, division: int, token: Token | None = None):
-    """The newest sale ESI still returns for the division, or None."""
-    sales = [t for t in get_transactions(corp_id, division, token=token) if not t.is_buy]
+def get_latest_transaction(corp_id: int, division: int, is_buy: bool, token: Token | None = None):
+    """The newest purchase (is_buy) or sale ESI still returns for the division, or None."""
+    found = [t for t in get_transactions(corp_id, division, token=token) if t.is_buy == is_buy]
 
-    return max(sales, key=lambda sale: sale.date, default=None)
+    return max(found, key=lambda transaction: transaction.date, default=None)
 
 
-def get_sales_since(since: datetime, corporation_id: int, division: int) -> tuple[list, int | None]:
-    """Sales after `since`, for a row that has no transaction to start after yet.
+def get_transactions_since(since: datetime, corporation_id: int, division: int,
+                           is_buy: bool) -> tuple[list, int | None]:
+    """Purchases (is_buy) or sales after `since`, for a row that has no transaction to start after yet.
 
-    Returns the sales and the newest transaction id the answer held, sold or
+    Returns those and the newest transaction id the answer held, sold or
     bought, which is where the next window starts.
     """
     transactions = get_transactions(corporation_id, division)
     newest = max((t.transaction_id for t in transactions), default=None)
 
-    return [t for t in transactions if t.date > since and not t.is_buy], newest
+    return [t for t in transactions if t.date > since and t.is_buy == is_buy], newest

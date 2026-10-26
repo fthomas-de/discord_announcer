@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [In Development] - Unreleased
 
+### Added
+
+- A configuration can post the purchases of its wallet division instead of
+  the sales: new column "Posts" (Sales / Purchases) on the page and in the
+  Django admin, migration `0008`. Existing rows keep posting sales. The
+  Discord title then reads "Purchases (last N hours)" or "Latest purchase, …".
+
+### Changed
+
+- The button "Post latest sale" is now "Post latest transaction" and posts
+  the newest sale or purchase, as each row says.
+
 ## [0.0.24] - 2026-10-26
 
 > [!IMPORTANT]

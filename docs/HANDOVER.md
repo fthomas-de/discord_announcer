@@ -19,9 +19,30 @@ Last updated 2026-10-26.
 - Dev: migrations **0001-0007** applied to `aa_dev`; 0007 runs no SQL, it
   only adds the `manage_configs` permission row. One configuration row
   saved, Alliance Auth 5.3.1, django-esi 9.10.0
-- 70 tests green (`discord_announcer/tests/`), each fix checked against the
+- In development, not committed: **sales or purchases per row**
+  (`transaction_kind`, migration **0008**, not yet applied to `aa_dev`) -
+  see below
+- 82 tests green (`discord_announcer/tests/`), each fix checked against the
   broken code
 - `manage.py check` and `makemigrations --check` clean
+
+## Sales or purchases (in development)
+
+Asked for and decided by the user on 2026-10-26: each row posts either the
+sales or the purchases of its division (`AnnouncerConfig.transaction_kind`,
+default sales); both at once means two rows, not a third choice. The button
+follows the row and is called "Post latest transaction" now.
+
+- The filter is `t.is_buy == config.posts_purchases` in the task and in
+  `selects.get_transactions_since` / `get_latest_transaction` (formerly
+  `get_sales_since` / `get_latest_sale`).
+- The watermark still counts every transaction, so switching a row from
+  sales to purchases posts only purchases newer than its last run - nothing
+  older is posted after the switch.
+- Discord words come from `utilities.transaction_words`, in English, not
+  from the translated choice labels.
+- `TestPostLatestPurchase` runs every button test of `TestPostLatestSale`
+  again for a purchases row, through class attributes.
 
 ## Permissions (0.0.24)
 
@@ -64,8 +85,8 @@ for its own wallet sync. It needs the roles scope on the token.
 
 The two buttons on the page work on saved rows and run in the request:
 "Check tokens" reads each wallet once without cache and without posting;
-"Post latest sale" posts each active row's newest sale and leaves
-`last_run_at` alone.
+"Post latest transaction" (formerly "Post latest sale") posts each active
+row's newest sale or purchase and leaves `last_run_at` alone.
 
 ## The 2026-09-23 menu crash
 
