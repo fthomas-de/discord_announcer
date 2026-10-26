@@ -16,6 +16,12 @@
                 the sales since its previous run, with at least one hour between two posts.{% endblocktranslate %}
             </p>
 
+            {% if not can_manage %}
+                <p class="text-body-secondary small">
+                    {% translate "You can look at the configurations; changing them needs the permission to manage them." %}
+                </p>
+            {% endif %}
+
             <form role="form" action="" method="POST">
                 {% csrf_token %}
                 {{ formset.management_form }}
@@ -35,7 +41,9 @@
                                     <th scope="col">{{ fields.channel_id.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.channel_id.help_text %}</th>
                                     <th scope="col">{{ fields.time_delta.label }}{% include "discord_announcer/partials/help-icon.html" with text=fields.time_delta.help_text %}</th>
                                     <th scope="col">{{ fields.is_active.label }}</th>
-                                    <th scope="col" class="text-end">{% translate "Remove" %}</th>
+                                    {% if can_manage %}
+                                        <th scope="col" class="text-end">{% translate "Remove" %}</th>
+                                    {% endif %}
                                 </tr>
                             </thead>
                         {% endwith %}
@@ -60,50 +68,56 @@
                                     <td>{% bootstrap_field config_form.time_delta show_label=False show_help=False %}</td>
                                     {# checkboxes are shorter than the inputs, nudge them to the inputs' centre line #}
                                     <td class="pt-2">{% bootstrap_field config_form.is_active show_label=False %}</td>
-                                    <td class="text-end pt-2">
-                                        {% if config_form.instance.pk %}
-                                            {% bootstrap_field config_form.DELETE show_label=False %}
-                                        {% endif %}
-                                    </td>
+                                    {% if can_manage %}
+                                        <td class="text-end pt-2">
+                                            {% if config_form.instance.pk %}
+                                                {% bootstrap_field config_form.DELETE show_label=False %}
+                                            {% endif %}
+                                        </td>
+                                    {% endif %}
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
 
-                <div class="d-flex flex-wrap gap-2 mt-3">
-                    {% translate "Save" as button_text %}
-                    {% bootstrap_button button_class="btn btn-primary" content=button_text %}
+                {% if can_manage %}
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        {% translate "Save" as button_text %}
+                        {% bootstrap_button button_class="btn btn-primary" content=button_text %}
 
-                    {# these two submit their own forms below, which only carry the csrf token #}
-                    <button type="submit" form="discord-announcer-check-tokens" class="btn btn-secondary">
-                        <i class="fa-solid fa-key fa-fw"></i> {% translate "Check tokens" %}
-                    </button>
-                    <button type="submit" form="discord-announcer-send-latest" class="btn btn-secondary">
-                        <i class="fa-brands fa-discord fa-fw"></i> {% translate "Post latest sale" %}
-                    </button>
-                </div>
+                        {# these two submit their own forms below, which only carry the csrf token #}
+                        <button type="submit" form="discord-announcer-check-tokens" class="btn btn-secondary">
+                            <i class="fa-solid fa-key fa-fw"></i> {% translate "Check tokens" %}
+                        </button>
+                        <button type="submit" form="discord-announcer-send-latest" class="btn btn-secondary">
+                            <i class="fa-brands fa-discord fa-fw"></i> {% translate "Post latest sale" %}
+                        </button>
+                    </div>
 
-                <p class="text-body-secondary small mt-2 mb-0">
-                    {% blocktranslate trimmed %}"Check tokens" reads the wallet of every saved row once, the way the
-                    scheduled task does, without posting. "Post latest sale" posts the newest sale of every
-                    active row once, however old, and leaves the regular rhythm untouched. Both work on the
-                    saved rows, so save changes first.{% endblocktranslate %}
-                </p>
+                    <p class="text-body-secondary small mt-2 mb-0">
+                        {% blocktranslate trimmed %}"Check tokens" reads the wallet of every saved row once, the way the
+                        scheduled task does, without posting. "Post latest sale" posts the newest sale of every
+                        active row once, however old, and leaves the regular rhythm untouched. Both work on the
+                        saved rows, so save changes first.{% endblocktranslate %}
+                    </p>
+                {% endif %}
             </form>
 
-            <form id="discord-announcer-check-tokens" method="POST" action="{% url 'discord_announcer:check_tokens' %}">
-                {% csrf_token %}
-            </form>
-            <form id="discord-announcer-send-latest" method="POST" action="{% url 'discord_announcer:send_latest' %}">
-                {% csrf_token %}
-            </form>
+            {% if can_manage %}
+                <form id="discord-announcer-check-tokens" method="POST" action="{% url 'discord_announcer:check_tokens' %}">
+                    {% csrf_token %}
+                </form>
+                <form id="discord-announcer-send-latest" method="POST" action="{% url 'discord_announcer:send_latest' %}">
+                    {% csrf_token %}
+                </form>
 
-            <datalist id="{{ corporation_datalist_id }}">
-                {% for name, ticker in corporations %}
-                    <option value="{{ name }}">{{ ticker }}</option>
-                {% endfor %}
-            </datalist>
+                <datalist id="{{ corporation_datalist_id }}">
+                    {% for name, ticker in corporations %}
+                        <option value="{{ name }}">{{ ticker }}</option>
+                    {% endfor %}
+                </datalist>
+            {% endif %}
         </div>
     </div>
 {% endblock %}
@@ -112,11 +126,13 @@
     document.querySelectorAll('[data-bs-tooltip="discord-announcer"]')
         .forEach((element) => new bootstrap.Tooltip(element));
 
-    {% translate "Post the latest sale of every active row to Discord now?" as confirm_text %}
-    document.getElementById("discord-announcer-send-latest")
-        .addEventListener("submit", (event) => {
-            if (!confirm("{{ confirm_text|escapejs }}")) {
-                event.preventDefault();
-            }
-        });
+    {% if can_manage %}
+        {% translate "Post the latest sale of every active row to Discord now?" as confirm_text %}
+        document.getElementById("discord-announcer-send-latest")
+            .addEventListener("submit", (event) => {
+                if (!confirm("{{ confirm_text|escapejs }}")) {
+                    event.preventDefault();
+                }
+            });
+    {% endif %}
 {% endblock %}

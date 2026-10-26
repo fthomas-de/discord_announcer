@@ -62,7 +62,7 @@ class AnnouncerConfigForm(forms.ModelForm):
             "is_active",
         ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, read_only=False, **kwargs):
         super().__init__(*args, **kwargs)
 
         # the input shows the name, the model stores the foreign key
@@ -74,10 +74,21 @@ class AnnouncerConfigForm(forms.ModelForm):
         # row counts as changed and blocks saving. The default is stable, so off.
         self.fields["time_delta"].show_hidden_initial = False
 
+        if read_only:
+            for field in self.fields.values():
+                field.disabled = True
+
 
 AnnouncerConfigFormSet = forms.modelformset_factory(
     AnnouncerConfig,
     form=AnnouncerConfigForm,
     extra=1,
     can_delete=True,
+)
+
+# for users who may look but not change: no empty row, nothing to tick
+AnnouncerConfigReadOnlyFormSet = forms.modelformset_factory(
+    AnnouncerConfig,
+    form=AnnouncerConfigForm,
+    extra=0,
 )

@@ -4,6 +4,8 @@ from types import SimpleNamespace
 from unittest import mock
 
 from django.contrib.messages import get_messages
+from django.core.cache import cache
+from django.test import override_settings
 from django.urls import reverse
 
 from esi.errors import TokenInvalidError
@@ -26,6 +28,7 @@ from .base import (
 
 TOKEN = SimpleNamespace(character_name="Accountant Alt")
 INDEX = "discord_announcer:index"
+MANAGER = ("basic_access", "manage_configs")
 
 
 def formset_data(rows, initial=0):
@@ -47,15 +50,18 @@ def texts(response):
     return [str(message) for message in get_messages(response.wsgi_request)]
 
 
+# the button cooldown lives in the cache; keep it off the dev instance's redis
+@override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
 class ViewTestCase(DiscordAnnouncerTestCase):
     def setUp(self):
+        cache.clear()
         self.corporation = make_corporation()
-        self.client.force_login(make_user())
+        self.client.force_login(make_user(permissions=MANAGER))
 
 
-class TestAccess(DiscordAnnouncerTestCase):
+class TestAccess(ViewTestCase):
     def test_should_turn_away_a_user_without_the_permission(self):
-        self.client.force_login(make_user(permissions=()))
+        self.client.force_login(make_user("nobody", 91000002, permissions=()))
 
         for name in ("index", "check_tokens", "send_latest"):
             with self.subTest(view=name):
@@ -65,8 +71,17 @@ class TestAccess(DiscordAnnouncerTestCase):
                 self.assertEqual(response.status_code, 302)
                 self.assertTrue(response["Location"].startswith("/account/login/"))
 
+    def test_should_keep_the_buttons_from_a_user_who_may_only_look(self):
+        self.client.force_login(make_user("viewer", 91000002))
+
+        for name in ("check_tokens", "send_latest"):
+            with self.subTest(view=name),                     mock.patch("discord_announcer.views.get_corp_transaction_token") as token:
+                response = self.client.post(reverse(f"discord_announcer:{name}"))
+
+                self.assertTrue(response["Location"].startswith("/account/login/"))
+                token.assert_not_called()
+
     def test_should_only_take_the_buttons_as_post(self):
-        self.client.force_login(make_user())
 
         for name in ("check_tokens", "send_latest"):
             with self.subTest(view=name):
@@ -148,6 +163,67 @@ class TestTheForm(ViewTestCase):
         )
 
 
+class TestLookingOnly(ViewTestCase):
+    """basic_access alone shows the page; changing anything needs manage_configs."""
+
+    def setUp(self):
+        super().setUp()
+        self.config = make_config(corporation=self.corporation)
+        self.client.force_login(make_user("viewer", 91000002))
+
+    def test_should_show_the_rows_without_anything_to_change(self):
+        response = self.client.get(reverse(INDEX))
+
+        self.assertContains(response, f'value="{CORP_NAME}"')
+        self.assertContains(response, "disabled")
+        self.assertEqual(response.context["formset"].total_form_count(), 1)  # no empty row
+        for absent in ("Save", "Check tokens", "Post latest sale", "<datalist", "DELETE"):
+            with self.subTest(absent=absent):
+                self.assertNotContains(response, absent)
+
+    def test_should_refuse_a_change(self):
+        row = {
+            "id": str(self.config.pk), "name": "Renamed", "corporation": CORP_NAME, "division": "1",
+            "channel_id": "1", "time_delta": "1", "is_active": "on", "DELETE": "on",
+        }
+
+        response = self.client.post(reverse(INDEX), formset_data([row], initial=1))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(AnnouncerConfig.objects.get().name, "Market")
+
+
+@mock.patch("discord_announcer.views.get_corp_transaction_token", return_value=TOKEN)
+class TestCooldown(ViewTestCase):
+    def setUp(self):
+        super().setUp()
+        make_config(corporation=self.corporation)
+
+    def test_should_turn_away_a_second_click_of_the_same_button(self, token):
+        url = reverse("discord_announcer:check_tokens")
+
+        with mock.patch("discord_announcer.views.get_transactions", return_value=[]) as esi:
+            self.client.post(url)
+            response = self.client.post(url)
+
+        self.assertEqual(esi.call_count, 1)
+        self.assertIn("Please wait 60 seconds", texts(response)[-1])
+
+    def test_should_time_each_button_and_user_on_its_own(self, token):
+        with mock.patch("discord_announcer.views.get_transactions", return_value=[]) as esi:
+            self.client.post(reverse("discord_announcer:check_tokens"))
+            self.client.force_login(make_user("second", 91000002, permissions=MANAGER))
+            self.client.post(reverse("discord_announcer:check_tokens"))
+
+        self.assertEqual(esi.call_count, 2)
+
+        patcher, sent = fake_discord()
+        with patcher, mock.patch("discord_announcer.views.discord_bot_active", return_value=True),                 mock.patch("discord_announcer.views.get_latest_sale", return_value=None) as latest:
+            self.client.post(reverse("discord_announcer:send_latest"))
+
+        latest.assert_called_once()
+
+
 @mock.patch("discord_announcer.views.get_corp_transaction_token", return_value=TOKEN)
 class TestCheckTokens(ViewTestCase):
     def check(self):
@@ -183,6 +259,8 @@ class TestCheckTokens(ViewTestCase):
             (TokenInvalidError(), "is no longer valid"),
         ):
             with self.subTest(error=type(error).__name__):
+                cache.clear()
+
                 with mock.patch("discord_announcer.views.get_transactions", side_effect=error):
                     # the redirect is not followed, so earlier messages are still queued
                     self.assertIn(words, texts(self.check())[-1])

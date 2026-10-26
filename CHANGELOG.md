@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [In Development] - Unreleased
 
+> [!IMPORTANT]
+>
+> **`basic_access` no longer lets anyone change anything.** Grant the new
+> permission `discord_announcer.manage_configs` to the people maintaining the
+> announcements, or they can only look at the page. Migration `0007` adds it.
+
+### Added
+
+- Permission `manage_configs` for saving and removing configurations and for
+  "Check tokens" and "Post latest sale" (migration `0007`).
+- A cooldown of 60 seconds per user and button on "Check tokens" and "Post
+  latest sale".
+
+### Changed
+
+- With `basic_access` alone the page shows the configurations read only:
+  no empty row, no remove boxes, no buttons, no corporation list. A POST to
+  the page is refused with 403.
+
 ## [0.0.23] - 2026-09-28
 
 ### Changed

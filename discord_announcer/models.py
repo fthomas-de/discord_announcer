@@ -24,7 +24,11 @@ class General(models.Model):
 
         managed = False
         default_permissions = ()
-        permissions = (("basic_access", "Can access this app"),)
+        permissions = (
+            ("basic_access", "Can access this app"),
+            # posting any corporation's sales into any channel is an admin's call
+            ("manage_configs", "Can change the configurations and use the buttons"),
+        )
 
 
 class AnnouncerConfig(models.Model):

@@ -95,12 +95,15 @@ python manage.py collectstatic --noinput
 
 ## Permissions<a name="permissions"></a>
 
-| Permission                            | Grants                                          |
-| ------------------------------------- | ----------------------------------------------- |
-| `discord_announcer.basic_access`      | The sidebar entry and the configuration page     |
+| Permission                         | Grants                                                                        |
+| ---------------------------------- | ----------------------------------------------------------------------------- |
+| `discord_announcer.basic_access`   | The sidebar entry and the configuration page, read only                       |
+| `discord_announcer.manage_configs` | Changing and removing every configuration, and the two buttons on the page    |
 
-Everybody with this permission can change every configuration, so grant it only
-to the people maintaining the announcements.
+`manage_configs` works together with `basic_access`. Whoever holds it can post
+the sales of any corporation that has a wallet token into any channel the bot
+can reach, so grant it only to the people maintaining the announcements. Each
+button can be used once a minute per user.
 
 ## Configuration<a name="configuration"></a>
 

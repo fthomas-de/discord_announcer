@@ -3,6 +3,8 @@
 # Django
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.cache import cache
+from django.core.exceptions import PermissionDenied
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
@@ -19,23 +21,37 @@ from esi.exceptions import HTTPClientError
 
 from discord_announcer import __version__
 from discord_announcer.discord_bot import discord_bot_active, send_message_to_discord
-from discord_announcer.forms import CORPORATION_DATALIST_ID, AnnouncerConfigFormSet
+from discord_announcer.forms import (
+    CORPORATION_DATALIST_ID,
+    AnnouncerConfigFormSet,
+    AnnouncerConfigReadOnlyFormSet,
+)
 from discord_announcer.models import AnnouncerConfig
 from discord_announcer.selects import get_corp_transaction_token, get_latest_sale, get_transactions
 from discord_announcer.utilities import describe_source, format_sales
 
 logger = get_extension_logger(__name__)
 
+# Seconds a user waits between two clicks of the same button. Both buttons
+# call ESI once per row in the request, one of them posts to Discord.
+BUTTON_COOLDOWN = 60
+
 
 @login_required
 @permission_required("discord_announcer.basic_access")
 def index(request: WSGIRequest) -> HttpResponse:
     """Manage the announcer configurations (corporation, division, channel,
-    interval) that the scheduled task reads."""
+    interval) that the scheduled task reads; without manage_configs, only show them."""
 
     queryset = AnnouncerConfig.objects.select_related("corporation")
+    can_manage = request.user.has_perm("discord_announcer.manage_configs")
 
-    if request.method == "POST":
+    if not can_manage:
+        if request.method == "POST":
+            raise PermissionDenied
+
+        formset = AnnouncerConfigReadOnlyFormSet(queryset=queryset, form_kwargs={"read_only": True})
+    elif request.method == "POST":
         formset = AnnouncerConfigFormSet(request.POST, queryset=queryset)
 
         if formset.is_valid():
@@ -49,6 +65,7 @@ def index(request: WSGIRequest) -> HttpResponse:
     context = {
         "title": _("Discord Announcer"),
         "version": __version__,
+        "can_manage": can_manage,
         "formset": formset,
         "corporation_datalist_id": CORPORATION_DATALIST_ID,
         "corporations": EveCorporationInfo.objects.order_by("corporation_name").values_list(
@@ -91,11 +108,29 @@ def _missing_token(config: AnnouncerConfig) -> str:
     ) % {"name": config.name, "corporation": config.corporation.corporation_name}
 
 
+def _cooling_down(request: WSGIRequest, button: str) -> bool:
+    """True, with a message, if the user clicked this button within the cooldown."""
+
+    # add() only writes a key that is not there yet, so the first click wins
+    if cache.add(f"discord_announcer:{button}:{request.user.pk}", True, timeout=BUTTON_COOLDOWN):
+        return False
+
+    messages.warning(
+        request,
+        _("Please wait %(seconds)d seconds between two clicks of this button.") % {"seconds": BUTTON_COOLDOWN},
+    )
+
+    return True
+
+
 @login_required
-@permission_required("discord_announcer.basic_access")
+@permission_required(["discord_announcer.basic_access", "discord_announcer.manage_configs"])
 @require_POST
 def check_tokens(request: WSGIRequest) -> HttpResponse:
     """Read every saved configuration's wallet once, the way the task does, without posting."""
+
+    if _cooling_down(request, "check_tokens"):
+        return redirect("discord_announcer:index")
 
     configs = AnnouncerConfig.objects.select_related("corporation").order_by("name")
 
@@ -125,7 +160,7 @@ def check_tokens(request: WSGIRequest) -> HttpResponse:
 
 
 @login_required
-@permission_required("discord_announcer.basic_access")
+@permission_required(["discord_announcer.basic_access", "discord_announcer.manage_configs"])
 @require_POST
 def send_latest(request: WSGIRequest) -> HttpResponse:
     """Post the newest sale of every active configuration once; the regular rhythm is not touched."""
@@ -133,6 +168,9 @@ def send_latest(request: WSGIRequest) -> HttpResponse:
     if not discord_bot_active():
         messages.error(request, _("AA-Discordbot is not installed, nothing can be posted."))
 
+        return redirect("discord_announcer:index")
+
+    if _cooling_down(request, "send_latest"):
         return redirect("discord_announcer:index")
 
     configs = AnnouncerConfig.objects.filter(is_active=True).select_related("corporation").order_by("name")
